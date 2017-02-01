@@ -1,6 +1,6 @@
 # raspbian Secure Server Config Tutorial (R.S.S.C.T)
 
-## Description
+# Description
 
 Let's build a server at home with a RaspberryPI, a minimal optimized [Raspbian](https://www.raspbian.org/) OS, configure it, secure it, hide it, test it and of course, enjoy it!
 
@@ -9,7 +9,7 @@ This tutorial is for Raspberry Pi Model 1B, 1B+ and 2B, a minimal microSD card o
 Here follow the detailed process of building the server, let's make coffee and get to it!
 
 
-## Install
+# Install
 
 First of all i wanted to start with a minimal version of Raspbian, something similar to the [netinst version of Debian](https://www.debian.org/CD/netinst/), so i searched the web (not googleed, i prefer to use [DuckDuckGo](https://duckduckgo.com/) because they do not track you, or at least it seem so) and i find a great contribution from [debian-pi](https://github.com/debian-pi) github user, the [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) repo, a Raspbian (minimal) unattended netinstaller!
 
@@ -26,7 +26,7 @@ If everything went ok, now you can ssh into your RPi with:
 ssh root@RPI_ip_number
 ```
 
-## Post-Install Config
+# Post-Install Config
 
 ```bash
 dpkg-reconfigure locales
@@ -54,22 +54,21 @@ Add bcm2708-rng to /etc/modules to auto-load and use the kernel module for the h
 echo "bcm2708-rng" | tee -a /etc/modules
 ```
 
-## Configuration
+# Configuration
 
-# Users
+## Users
 
-# Net
+## Net
 
-# Services
+## Services
 
-# Security
+## Security
 
-# Hardening
+## Hardening
 
-# Hide
+## Hide
 
-# Attack (Testing)
+## Attack (Testing)
 
-# Your 50€ personal server
+## Your 50€ dedicated server (50DS)
 
-# License
