@@ -28,24 +28,31 @@ ssh root@RPI_ip_number
 
 ## Post-Install Config
 
+```bash
 dpkg-reconfigure locales
 dpkg-reconfigure tzdata
 apt-get install raspi-copies-and-fills
 apt-get install rng-tools
 apt-get install bash-completion
+```
 
 Create SWAP file:
 
+```bash
 dd if=/dev/zero of=/swap bs=1M count=1024 && mkswap /swap && chmod 600 /swap
+```
 
 Append /swap none swap sw 0 0 to /etc/fstab:
 
+```bash
 echo "/swap none swap sw 0 0" | tee -a /etc/fstab
+```
 
 Add bcm2708-rng to /etc/modules to auto-load and use the kernel module for the hardware random number generator:
 
+```bash
 echo "bcm2708-rng" | tee -a /etc/modules
-
+```
 
 ## Configuration
 
