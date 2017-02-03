@@ -11,12 +11,12 @@ Here follow the detailed process of building the server, let's make coffee and g
 
 # Install
 
-First of all, we want to start with a minimal version of Raspbian, something similar to the [netinst version of Debian](https://www.debian.org/CD/netinst/), so i searched the web (not googleed, i prefer to use [DuckDuckGo](https://duckduckgo.com/) because they do not track you, or at least it seem so) and i find a great contribution from [debian-pi](https://github.com/debian-pi) github user, the [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) repo, a Raspbian (minimal) unattended netinstaller!
+First of all, we want to start with a minimal version of Raspbian, something similar to the [netinst version of Debian](https://www.debian.org/CD/netinst/), so i searched the web (not googleed, i prefer to use [DuckDuckGo](https://duckduckgo.com/) because they do not track you, or at least it seems so) and i find a great contribution from [debian-pi](https://github.com/debian-pi) github user, the [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) repo, a Raspbian (minimal) unattended netinstaller!
 
 Amazing!
 
 So, follow the repo instructions, download the last release installer and flash the SD card. Easy.
-The second step is put the flashed SD card in your RPi, power on and wait, the installer will boot your RPi, connect to the internet (you need to connect the RPi with an ethernet cable), downloading the latest version of Raspbian, and installing it. Depending on your internet connection speed you will have to go for another coffee, or not.
+The second step is to put the flashed SD card in your RPi, power on and wait, the installer will boot your RPi, connect to the internet (you need to connect the RPi with an ethernet cable), downloading the latest version of Raspbian, and installing it. Depending on your internet connection speed you will have to go for another coffee, or not.
 
 When this step is finished you will have a minimal Raspbian system with ssh enabled by default, the root account with password: raspbian, and all the necessary basic command line tools. (you can check the details in the [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) repo)
 
@@ -127,7 +127,7 @@ This command will list potential 'vulnerable' system points, listing all executa
 /bin/su
 ```
 
-basically SUID flag allow a user to run an executable with the permissions of the executable owner, so if someone find a vulnerability in one of this programs and exploits it, GAME OVER, he/she will have root permissions on the system, goodbye Raspbian Secure Server!!!
+basically SUID flag allow a user to run an executable with the permissions of the executable owner, so if someone finds a vulnerability in one of this programs and exploits it, GAME OVER, he/she will have root permissions on the system, goodbye Raspbian Secure Server!!!
 
 But don't worry, we are just getting started, a long journey awaits us, with so much to learn.
 
