@@ -104,7 +104,7 @@ apt-get install raspi-copies-and-fills
 apt-get install rng-tools && echo "bcm2708-rng" | tee -a /etc/modules
 ```
 
-6 - Create a SWAP file, and enable it on boot modifing fstab file:
+6 - Create a 1GB SWAP file, and enable it on boot modifing fstab file:
 
 ```bash
 dd if=/dev/zero of=/swap bs=1M count=1024 && mkswap /swap && chmod 600 /swap
@@ -209,13 +209,29 @@ X11Forwarding no
 AllowUsers user
 ```
 
-4 - Save the file (ctrl o), close it (ctrl x) and restart the ssh service:
+4 - Disable tunneled cleartext password authentication and enable SSH public key only access
+
+```bash
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile      %h/.ssh/authorized_keys
+```
+
+5 - Save the file (ctrl o), close it (ctrl x) and restart the ssh service:
 
 ```bash
 /etc/init.d ssh restart
 ```
 
-5 - Log out and ssh login again to check
+6 - **On your local machine**, Log out and ssh login to check, now with your generated ssh key, normal cleartext password is now disabled.
+
+```bash
+ssh -i ~/.ssh/your_rsa_key_name -p 22 username@RPi_ip_number
+```
+
+For the most curious, -i specify the identity_file (your private key from the key pair), and -p specify the port where to connect (22 is the standard ssh port).
+
+7 - For more info about securing services, take a look at the [debian manual](https://www.debian.org/doc/manuals/securing-debian-howto/ch-sec-services.en.html)
 
 Ok, user configuration and SSH login secured and tested, if everything is working correctly, next story, "Net".
 
