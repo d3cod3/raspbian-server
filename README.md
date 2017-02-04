@@ -237,6 +237,65 @@ Ok, user configuration and SSH login secured and tested, if everything is workin
 
 ## Net
 
+So, basically, at this stage we want to connect our Raspbian Server at our local network via ethernet cable and ssh into it to continue installing and configuring stuff, and probably we are not going to do that always at the same place, sometimes we will working on that from home, and maybe sometimes we are going to work from a friend house, or a co-working somewhere, or whatever.
+The point is, we don't want to check every time the IP number of our RPi, we don't want to have DHCP (default) assign a new IP every time we connect our RPi to a new router, so we disable DHCP and assign a static IP. That means, our Raspbian Server, locally, will always have the IP we choose. This is really trivial, so let's do it.
+
+1 - Open the file /etc/network/interfaces
+
+```bash
+nano /etc/network/interfaces
+```
+
+2 - You'll see a line like this:
+
+```bash
+iface eth0 inet dhcp
+```
+
+This is the default configuration for eth0, the RPi standard ethernet device, with DHCP enabled. [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) is a protocol commonly used by the vast majority of routers to dinamically assign a free IP to the connected device. It's really the easy choice, but we don't want that here (not because of the "easy" part), we just want our RPi to have alwais the same IP number (static).
+
+3 - So we comment the default DHCP config line and we add a static IP:
+
+```bash
+#iface eth0 inet dhcp
+iface eth0 inet static
+  address your.static.ip.number Ex. 192.168.1.59
+  netmask 255.255.255.0
+```
+
+The address and netmask goes accordingly with your router configuration, but the above example is really common
+
+4 - Save the file and close it
+
+We have it! Try rebooting your RPi and check for the eth0 assigned IP:
+
+```bash
+ifconfig eth0 | grep inet
+```
+
+If everything is correct, your output will show the IP and netmask you configured in the /etc/network/interfaces file
+
+Ok, so pack your RPi with an ethernet cable, and stuff it in your bag, now we will be able to work at our server at any place with a router; we connect the RPi, start it up, and from another computer connected to the same router we ssh to our server, great!
+
+Let's take a look now at a really useful tool for when we are working with network stuff, [netstat](https://www.lifewire.com/netstat-linux-command-4095695)
+
+```bash
+netstat -apt
+```
+
+This will output all(listening and established) active tcp connections, my output:
+
+```bash
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 RPi.static.ip:22        *:*                     LISTEN      294/sshd        
+tcp        0      0 RPi.static.ip:22        client.ip.number:22     ESTABLISHED 388/sshd: username
+```
+
+Everything seems ok, we have our SSH daemon listening and our active ssh connection established.
+
+We will use this tool a lot, so check it out and get comfortable with it ;
+
 continue...
 
 ## Services
