@@ -252,14 +252,14 @@ nano /etc/network/interfaces
 iface eth0 inet dhcp
 ```
 
-This is the default configuration for eth0, the RPi standard ethernet device, with DHCP enabled. [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) is a protocol commonly used by the vast majority of routers to dinamically assign a free IP to the connected device. It's really the easy choice, but we don't want that here (not because of the "easy" part), we just want our RPi to have alwais the same IP number (static).
+This is the default configuration for eth0, the RPi standard ethernet device, with DHCP enabled. [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) is a protocol commonly used by the vast majority of routers to dynamically assign a free IP to the connected device. It's really the easy choice, but we don't want that here (not because of the "easy" part), we just want our RPi to have always the same IP number (static).
 
 3 - So we comment the default DHCP config line and we add a static IP:
 
 ```bash
 #iface eth0 inet dhcp
 iface eth0 inet static
-  address your.static.ip.number Ex. 192.168.1.59
+  address your.static.ip.number # Ex. 192.168.1.59
   netmask 255.255.255.0
 ```
 
@@ -292,9 +292,16 @@ tcp        0      0 RPi.static.ip:22        *:*                     LISTEN      
 tcp        0      0 RPi.static.ip:22        client.ip.number:22     ESTABLISHED 388/sshd: username
 ```
 
-Everything seems ok, we have our SSH daemon listening and our active ssh connection established.
+Everything seems ok, we have our SSH daemon listening at port 22 and our active ssh connection established.
+Port 22 is the standard port for SSH, and what are the standard port numbers for other services? To answer that, the best thing we can do is to take a look at the list of common standard ports in a server.
 
-We will use this tool a lot, so check it out and get comfortable with it ;
+Super easy, just take a look at the /etc/services file:
+
+```bash
+cat /etc/services
+```
+
+So services and ports, and netstat, we will use this tool a lot, so check it out and get comfortable with it ;
 
 continue...
 
