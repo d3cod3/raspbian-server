@@ -328,7 +328,7 @@ So far so good, we have now a decent secure access door to our Raspbian server, 
 
 ## Services
 
-From [wikipedia](https://en.wikipedia.org/wiki/Server_(computing): "Servers can provide various functionalities, often called 'services',  such as sharing data or resources among multiple clients, or performing computation for a client."
+From [wikipedia](https://en.wikipedia.org/wiki/Server_(computing)): "Servers can provide various functionalities, often called 'services',  such as sharing data or resources among multiple clients, or performing computation for a client."
 
 ![CERN First WWW Server](https://upload.wikimedia.org/wikipedia/commons/2/2c/First-server-cern-computer-center.jpg)
 
