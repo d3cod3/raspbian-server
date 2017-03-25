@@ -135,7 +135,7 @@ Let's install and configure all the essentials for our Raspbian Secure Server, n
 
 # Configuration
 
-We will need to get confortable with edit a lot of text files, maybe some programming too :P, so we begin installing our favorite console text editor, i'm going to use "nano", but there are better options like "vim", choose here whatever suits you:
+We will need to get comfortable with edit a lot of text files, maybe some programming too :P, so we begin installing our favorite console text editor, i'm going to use "nano", but there are better options like "vim", choose here whatever suits you:
 
 ```bash
 apt-get install nano
@@ -260,6 +260,7 @@ This is the default configuration for eth0, the RPi standard ethernet device, wi
 #iface eth0 inet dhcp
 iface eth0 inet static
   address your.static.ip.number # Ex. 192.168.1.59
+  gateway your.router.ip.number # Ex. 192.168.1.1
   netmask 255.255.255.0
 ```
 
@@ -303,11 +304,43 @@ cat /etc/services
 
 So services and ports, and netstat, we will use this tool a lot, so check it out and get comfortable with it ;
 
-continue...
+Ok, we'll hit pause right here, it's the update/dist-upgrade moment, we'll repeat this step a number of times over the entire server configuration:
+
+```bash
+apt-get update && apt-get dist-upgrade
+```
+
+To obtain all the updates for our current raspbian system, and:
+
+```bash
+apt-get clean
+```
+
+To clean disk space removing temporary updates installation files.
+
+In one line:
+
+```bash
+apt-get update && apt-get dist-upgrade -y && apt-get clean
+```
+
+So far so good, we have now a decent secure access door to our Raspbian server, we can now start installing and configure all our services, more or less depending on what we'll need from our server, but this is the next chapter so, see you in a bit.
 
 ## Services
 
+From [wikipedia](https://en.wikipedia.org/wiki/Server_(computing): "Servers can provide various functionalities, often called 'services',  such as sharing data or resources among multiple clients, or performing computation for a client."
+
+![CERN First WWW Server](https://upload.wikimedia.org/wikipedia/commons/2/2c/First-server-cern-computer-center.jpg)
+
+
+
 ## Security
+
+### Firewall
+
+### Fail2Ban
+
+### IDS (Intrusion Detection System)
 
 ## Hardening
 
