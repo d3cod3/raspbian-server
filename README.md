@@ -376,7 +376,7 @@ sudo useradd [user name] -d /home/[user name] -g 1001 -N -o -u 1001
 sudo passwd [user name]
 ```
 
--d is the user home directory which needs to be set to / (root).
+-d is the user home directory which needs to be set to /home/[user name].
 -g is the user group id to assign which in our example needs to be assigned to sftpgroup.
 -N useradd by default creates a group with the same name as the new user, this disables that.
 -u is the user id, which in our case needs to be the same id value as sftpgroup.
