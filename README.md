@@ -332,7 +332,239 @@ From [wikipedia](https://en.wikipedia.org/wiki/Server_(computing)): "Servers can
 
 ![CERN First WWW Server](https://upload.wikimedia.org/wikipedia/commons/2/2c/First-server-cern-computer-center.jpg)
 
+Why are we building a server? This is what you need to ask yourself just now! Because depending on what the answer will be, the content of this chapter will eventually change a lot, but anyway, we'll tray to stay cool and cover at least all the basic services, and maybe something more, but enough with the chatting, let's get to it.
+There is no better or specific order to install services, in general at least, so i will use mine but you fell free to change it, and of course contributions are welcome and really appreciated.
 
+### SFTP
+
+So, we'll start with implementing a SFTP service with a Chroot'ed Isolated File Directory, WHAAAAAAAAT?
+
+Well, yes, it's not double click on the icon :P, but we are trying to be pro here, and the tutorial title say "Secure Server Config..." so, but don't worry, we'll crack it step by step.
+
+Step 1, what is SFTP? From [digitalocean](https://www.digitalocean.com/community/tutorials/how-to-use-sftp-to-securely-transfer-files-with-a-remote-server) : "it stands for SSH File Transfer Protocol, or Secure File Transfer Protocol, is a separate protocol packaged with SSH that works in a similar way over a secure connection. The advantage is the ability to leverage a secure connection to transfer files and traverse the filesystem on both the local and remote system."
+
+Step 2, what in the hell means chroot'ed? From [wikipedia](https://en.wikipedia.org/wiki/Chroot) : "A chroot on Unix operating systems is an operation that changes the apparent root directory for the current running process and its children. A program that is run in such a modified environment cannot name (and therefore normally cannot access) files outside the designated directory tree. The term "chroot" may refer to the chroot(2) system call or the chroot(8) wrapper program. The modified environment is called a chroot jail."
+
+Step 3, in short, let's implement a secure difficult hackable file transfer protocol service for our Rasbian Server, yheaaaaaa! With this service we will be able to safe connect with our server and upload files, including let someone else access to our server to upload/download files, but in a chroot jail environment, like a bubble with no exits, a chroot environment is the only observable universe, so the rest of the system where we don't want anyone peeking or worse (see [Directory traversal attack](https://en.wikipedia.org/wiki/Directory_traversal_attack)), will not exists.
+
+Step 4, install OpenSSH server software
+
+```bash
+apt-get install openssh-server
+```
+
+Step 5, create a users group for sftp access and a specific user, this is a good practice for every kind of services, create specific groups for every service in order to limit access, if i will connect via sftp, i will have access to ONLY that.
+
+```bash
+groupadd sftpgroup
+```
+
+```bash
+cat /etc/group
+```
+
+Take note here of the id related with the newly created group, in my case is 1001:
+
+```bash
+sftpgroup:x:1001:
+```
+
+Add now a new user that we will use exclusively for SFTP access (change 1001 with your group id, and choose your user name):
+
+```bash
+sudo useradd [user name] -d /home/[user name] -g 1001 -N -o -u 1001
+sudo passwd [user name]
+```
+
+-d is the user home directory which needs to be set to / (root).
+-g is the user group id to assign which in our example needs to be assigned to sftpgroup.
+-N useradd by default creates a group with the same name as the new user, this disables that.
+-u is the user id, which in our case needs to be the same id value as sftpgroup.
+-o allows duplicate, non-unique user ids.
+The passwd command sets an encrypted user password.
+
+Now output the system users list to check that everything went fine:
+
+```bash
+cat /etc/passwd
+```
+
+In the last line we'll see the new added user
+
+```bash
+sftpuser:x:1001:1001::/home/sftpuser:/bin/sh
+```
+
+Now, before configuring the SSH daemon, we need to create a new keypair for this new user, in my case sftpuser, we did it before for the regular ssh connecting user (NET chapter?), so here a little refresh:
+
+1 - Generate the new keypair on your client machine:
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "raspbian_sftp_key"
+```
+
+2 - Copy the public key to the server:
+
+```bash
+ssh-copy-id -i myKey.pub sftpuser@RPI_ip_number
+```
+
+3 - That's it, exit from actual ssh session and try to log in with the new sftpuser just for testing.
+
+Step 6, we need now to edit the SSH daemon configuration file, the same one we edited for SSH connection some while ago, remember? Let's do it:
+
+```bash
+nano /etc/ssh/sshd_config
+```
+
+Search for the line
+
+```bash
+Subsystem sftp /usr/lib/openssh/sftp-server
+```
+
+And change it to
+
+```bash
+#Subsystem sftp /usr/lib/openssh/sftp-server
+Subsystem sftp internal-sftp
+```
+
+Now the cool part, go to the end of the document and add the following block:
+
+```bash
+Match group sftpgroup
+ChrootDirectory /var/www
+X11Forwarding no
+AllowTcpForwarding no
+ForceCommand internal-sftp
+```
+
+And this is the part where we confine the sftpgroup users group to the /var/www directory (they will not be able to escape from there, or at least they will have to sweat it).
+We use /var/www because is the standard directory for web servers, but feel free to choose another folder if you prefer, like /var/sftp for example.
+This step is really important, if you forget to configure the ChrootDirectory for the specific users group, a connected user could gain access to the / (the server root) and we do not actually want that!!!
+
+So, save the document and
+
+Step 7, create the /var/www folder, if you don't have it already:
+
+```bash
+mkdir /var/www
+```
+
+Step 8, create some testing folder, a read-only one, a read/write one and a no-access one:
+
+```bash
+cd /var/www
+mkdir test_readonly
+mkdir test_readwrite
+mkdir test_noaccess
+```
+
+At this moment the three folders have the same permissions, let's explain a bit:
+
+```bash
+ls -la
+```
+
+Give me (we are inside /var/www):
+
+```bash
+drwxr-xr-x  5 root root 4096 Mar 26 05:41 .
+drwxr-xr-x 12 root root 4096 Mar 26 05:37 ..
+drwxr-xr-x  2 root root 4096 Mar 26 05:41 test_noaccess
+drwxr-xr-x  2 root root 4096 Mar 26 05:40 test_readonly
+drwxr-xr-x  2 root root 4096 Mar 26 05:41 test_readwrite
+```
+
+We see here a list of the folder content, just the three folders we just created, and on the left we have the permission mode:
+
+drwxr-xr-x
+
+Let's break it in parts:
+
+d   
+
+For now we will focus on the last three blocks:
+
+rwx   r-x   r-x
+
+The first one on the left represent the root permissions, the second one in the center represent the group permissions, and the third one on the right represent permissions for everyone else, and we can read it this way:
+
+r w x  -->  2^2 2^1 2^0  -->  4  2  1
+
+And in bits we can read it:
+
+r w x --> 1 1 1
+
+r - x --> 1 0 1
+
+And so on
+
+So we have some possibilities, but not so much in the end:  0, 1, 2, 3, 4, 5, 6, 7
+
+The detailed list is:
+
+0 - No permissions
+1 - execute permission
+3 - execute+write permissions
+4 - read permission
+5 - execute+read permissions
+6 - read+write permissions
+7 - execute+read+write permissions
+
+More about Linux permissions [here](http://en.wikipedia.org/wiki/File_system_permissions#Symbolic_notation)
+
+So, coming back to our list:
+
+```bash
+drwxr-xr-x  5 root root 4096 Mar 26 05:41 .
+drwxr-xr-x 12 root root 4096 Mar 26 05:37 ..
+drwxr-xr-x  2 root root 4096 Mar 26 05:41 test_noaccess
+drwxr-xr-x  2 root root 4096 Mar 26 05:40 test_readonly
+drwxr-xr-x  2 root root 4096 Mar 26 05:41 test_readwrite
+```
+
+We have now all the folders with 755 permissions (rwx r-x r-x), and this is ok for the test_readonly one, but we need to change the permissions for the other two:
+
+```bash
+chown root:sftpgroup test_readwrite
+chmod 775 test_readwrite
+```
+
+With that we assign root as owner of the folder and sftpgroup as folder group, and with 775 permissions we grant full permission to owner, full permissions to assigned group, and execute+read permission to everyone else.
+
+So for the noaccess folder we set permissions to 711, execute only for group and everyone else:
+
+```bash
+chmod 711 test_noaccess
+```
+
+And our list again:
+
+```bash
+drwxr-xr-x  5 root root      4096 Mar 26 05:41 .
+drwxr-xr-x 12 root root      4096 Mar 26 05:37 ..
+drwx--x--x  2 root root      4096 Mar 26 05:41 test_noaccess
+drwxr-xr-x  2 root root      4096 Mar 26 05:40 test_readonly
+drwxrwxr-x  2 root sftpgroup 4096 Mar 26 05:41 test_readwrite
+```
+
+Step 9, test it! We are done, restart the SSH server:
+
+```bash
+/etc/init.d/ssh restart
+```
+
+Step 10, connect to our SFTP server from a client, i'm using [FileZilla](https://filezilla-project.org/):
+
+Create a new connection, with the server ip of your Raspbian server, port 22, SFTP protocol, and Key file as access type, set the name of the user, "sftpuser" in my case, and set the path to the private key from the key pair we recently create in step 5.
+
+So, if everything was correct, we are now able to navigate our /var/www server folder from a filezilla client, great!
+
+Next story, Apache web server install...
+
+### Apache
 
 ## Security
 
