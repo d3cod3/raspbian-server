@@ -507,6 +507,7 @@ The detailed list is:
 
 * 0 - No permissions
 * 1 - execute permission
+* 2 - write permission
 * 3 - execute+write permissions
 * 4 - read permission
 * 5 - execute+read permissions
