@@ -501,9 +501,7 @@ r - x --> 1 0 1
 
 And so on
 
-So we have some possibilities, but not so much in the end:  0, 1, 2, 3, 4, 5, 6, 7
-
-The detailed list is:
+So we have some possibilities, but not so much in the end:
 
 * 0 - No permissions
 * 1 - execute permission
