@@ -101,7 +101,7 @@ apt-get install raspi-copies-and-fills
 5 - Install and auto-load and use the kernel module for the hardware random number generator. This improves the performance of various server applications needing random numbers significantly.
 
 ```bash
-apt-get install rng-tools && echo "bcm2708-rng" | tee -a /etc/modules
+apt-get install rng-tools
 ```
 
 6 - Create a 1GB SWAP file, and enable it on boot modifing fstab file:
@@ -156,6 +156,12 @@ set const
 
 ## Users
 
+First of all, we need to install **sudo**, a program designed normal users to execute some commands as root, and why is that? Because it's safer than always opening root sessions, nobody will need to know the root password, every execution will be logged and so on with a few more security related reasons.
+
+```bash
+apt-get install sudo
+```
+
 Create a new user with regular account privileges (change "user" with your username of choice):
 
 ```bash
@@ -163,6 +169,26 @@ adduser user
 ```
 
 Follow instructions, fill all the fields you want, and most important, enter a strong password.
+
+Now we need to add the new user to the sudo group, in order to grant sudo capabilities:
+
+```bash
+adduser user sudo
+```
+
+My output:
+
+```bash
+Adding user 'user' to group 'sudo'
+Adding user user to group sudo
+Done.
+```
+
+In order to apply the new group assign log out and log in again.
+
+Next story, SSH
+
+### SSH
 
 Create a new SSH Key Pair for securing the server with a public key authentication for the new user:
 
@@ -564,6 +590,132 @@ So, if everything was correct, we are now able to navigate our /var/www server f
 Next story, Apache web server install...
 
 ### Apache
+
+A web server, this sounds like troubles! Well, it's not untrue, but here we go, let's take a step back and talk about something indispensable, the firewall, and prepare yourself, we' wi'll come back to this topic a lot, while installing all our server stuff.
+A server without a good firewall set up is like a safe without a door, right now it will probably not last till the end of the day. So let's learn something about linux firewalls!
+
+The standard debian firewall is called iptables (for IPv4, and ip6tables for IPv6) , so we'll using that, first step install it:
+
+```bash
+apt-get install iptables iptables-persistent
+```
+
+The package iptables-persistent is used to make our firewall rules persistent over reboots.
+
+Ok, now print the current iptable rules, none right now:
+
+```bash
+iptables -L
+```
+
+My output:
+
+```bash
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+```
+
+And a useful command to flush all rules (like a firewall reset):
+
+```bash
+iptables -F
+```
+
+Now, we don't want to be lock out from our server, and playing with the firewall can lock us out really easy, so first of all we add a rule that assure us to maintain untouched all current connections (basically our actual ssh connection):
+
+```bash
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+```
+
+In english, we tell to iptables to **-A** append the rule, **INPUT** to the input chain, **-m conntrack --ctstate ESTABLISHED,RELATED** relate this rule with the current connections ONLY, **-j ACCEPT** JUMP to accept and the connection are still in place.
+
+If we list our rules again:
+
+```bash
+iptables -L
+```
+
+We'll see something new, the "door" opened for incoming current connections (our SSH connection), amazing!
+
+Now we start to design our firewall, starting with the basics for what we already have now (SSH, SFTP and soon Apache web server), along the way we will come back and add some new rules for all the other stuff we will need on our server. Maybe it's a good idea to make yourself a new cup of coffee, or whatever you like to drink.
+
+Let's start blocking off insecure connections, we actually are using port 22 for SSH and SFTP, and we'll want to have port 80 (http) and port 443 (https) available:
+
+```bash
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+```bash
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+```
+
+```bash
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+```
+
+Now block all the remaining traffic:
+
+```bash
+iptables -P INPUT DROP
+```
+
+Allow loopback access (**-I INPUT 1** place this rule first in the list, IMPORTANT):
+
+```bash
+iptables -I INPUT 1 -i lo -j ACCEPT
+```
+
+List now rules in verbose mode:
+
+```bash
+iptables -L -v
+```
+
+My output:
+
+```bash
+Chain INPUT (policy DROP 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 ACCEPT     all  --  lo     any     anywhere             anywhere
+  455 30392 ACCEPT     all  --  any    any     anywhere             anywhere             ctstate RELATED,ESTABLISHED
+    0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:ssh
+    0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:http
+    0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:https
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain OUTPUT (policy ACCEPT 7 packets, 712 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+```
+
+We have now our basic firewall! Let's save it (do not change the saving files path /etc/iptables/rules.vX):
+
+```bash
+iptables-save > /etc/iptables/rules.v4 && ip6tables-save > /etc/iptables/rules.v6
+```
+
+Restart your Raspbian server and check if everything is ok, and if the rules are automatically loaded.
+
+We are ready now to start with the Apache installation/configuration, let's do it:
+
+```bash
+apt-get install apache2
+```
+
+Now, from a client browser, let's check if it's working, copy in the url the ip of your Raspberry server and hit enter
+
+![CERN First WWW Server](http://www.d3cod3.org/RSS/apache_screenshot.jpg)
+
+That's it, Apache installed, and up&running! Now the configuration:
+
+
 
 ## Security
 
