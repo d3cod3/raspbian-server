@@ -671,6 +671,20 @@ Allow loopback access (**-I INPUT 1** place this rule first in the list, IMPORTA
 iptables -I INPUT 1 -i lo -j ACCEPT
 ```
 
+And do not forget to permit outgoing connections (for apt-get, web browsing, etc..)
+
+```bash
+iptables -F OUTPUT  # remove your existing OUTPUT rules if you have some
+iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 53 -m state --state NEW -j ACCEPT
+iptables -A OUTPUT -p udp --dport 53 -m state --state NEW -j ACCEPT
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+```
+
 List now rules in verbose mode:
 
 ```bash
@@ -680,19 +694,24 @@ iptables -L -v
 My output:
 
 ```bash
-Chain INPUT (policy DROP 0 packets, 0 bytes)
+Chain INPUT (policy DROP 1 packets, 32 bytes)
  pkts bytes target     prot opt in     out     source               destination
-    0     0 ACCEPT     all  --  lo     any     anywhere             anywhere
-  455 30392 ACCEPT     all  --  any    any     anywhere             anywhere             ctstate RELATED,ESTABLISHED
-    0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:ssh
+    8  1104 ACCEPT     all  --  lo     any     anywhere             anywhere
+ 6779 9556K ACCEPT     all  --  any    any     anywhere             anywhere             state RELATED,ESTABLISHED
+ 1087 75053 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:ssh
     0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:http
     0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:https
 
-Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
  pkts bytes target     prot opt in     out     source               destination
 
-Chain OUTPUT (policy ACCEPT 7 packets, 712 bytes)
+Chain OUTPUT (policy DROP 0 packets, 0 bytes)
  pkts bytes target     prot opt in     out     source               destination
+ 3435  250K ACCEPT     all  --  any    any     anywhere             anywhere             state RELATED,ESTABLISHED
+   13   780 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:http state NEW
+    0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:https state NEW
+    0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:domain state NEW
+   21  1415 ACCEPT     udp  --  any    any     anywhere             anywhere             udp dpt:domain state NEW
 ```
 
 We have now our basic firewall! Let's save it (do not change the saving files path /etc/iptables/rules.vX):
@@ -715,7 +734,176 @@ Now, from a client browser, let's check if it's working, copy in the url the ip 
 
 That's it, Apache installed, and up&running! Now the configuration:
 
+* 1 - Hide Apache version:
 
+```bash
+nano /etc/apache2/conf-enabled/security.conf
+```
+
+And add/edit this lines:
+
+```bash
+ServerSignature Off
+ServerTokens Prod
+```
+
+Save and restart apache2:
+
+```bash
+/etc/init.d/apache2 restart
+```
+
+* 2 - Turn Off Directory Browsing, Disable Symbolic Links, Limit request size (to 600 Kb) and Turn Off Server Side Includes and CGI Execution
+
+```bash
+nano /etc/apache2/apache2.conf
+```
+
+Then edit the following lines:
+
+```bash
+<Directory /var/www/>
+        LimitRequestBody 614400
+        Options -FollowSymLinks -Includes -ExecCGI
+        AllowOverride None
+        Require all granted
+</Directory>
+```
+
+Save and restart again.
+
+* 3 - Disable unnecessary modules and restart again
+
+```bash
+a2dismod autoindex
+a2dismod status
+/etc/init.d/apach2 restart
+```
+
+* 4 - Install additional modules
+
+```bash
+apt-get install libapache2-mod-security2
+```
+
+ModSecurity need to be enabled:
+
+```bash
+mv /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
+nano /etc/modsecurity/modsecurity.conf
+```
+
+And edit this line:
+
+```bash
+#SecRuleEngine DetectionOnly
+SecRuleEngine On
+```
+
+Restart apache service and install the next module:
+
+```bash
+apt-get install libapache2-mod-evasive
+```
+
+Then append this an the end of /etc/apache2/apache2.conf:
+
+```bash
+<IfModule evasive_module>
+    #optional directive (default value equals to 1024)
+    DOSHashTableSize    1024
+
+    #obligatory directives (if even one of them is not set, malfunctioning is possible)
+    DOSPageCount        10
+    DOSSiteCount        150
+    DOSPageInterval     1
+    DOSSiteInterval     1
+    DOSBlockingPeriod   10
+</IfModule>
+```
+
+Restart apache again, we got it! Now it's time for the newt component, the MySQL Server!
+
+### MySQL Server
+
+First step, install it, easy (always use strong passwords):
+
+```bash
+apt-get install mysql-server php5-mysql
+```
+
+And, to secure the install:
+
+```bash
+mysql_secure_installation
+```
+
+Let's test it:
+
+```bash
+mysql -u root -p
+```
+
+And you will enter the mysql console, perfect! Now install PHP!
+
+### PHP
+
+Now, we have a small issue here, the latest Raspbian is based on debian Jessie, that still comes with PHP 5.6 by default (from the stable branch), but we don't want an older almost unsupported (and most insecure) PHP release, we want to install PHP 7, the last release. In order to do that we'll need to tweak a little bit our apt system, let's get to it:
+
+```bash
+nano /etc/apt/sources.list
+```
+
+And add at the end:
+
+```bash
+# TWEAK - Stretch (testing) branch for PHP7 install on Jessie
+deb http://mirrordirector.raspbian.org/raspbian/ stretch main contrib non-free rpi
+```
+
+Now what we don't want is that every package is updated or installed from the stretch (testing) branch. To do this we can set some preferences that we want all packages to be selected from Jessie by default. Open up the following file **/etc/apt/preferences**, and add the following:
+
+```bash
+Package: *
+Pin: release n=jessie
+Pin-Priority: 600
+```
+
+Save the file and update:
+
+```bash
+apt-get update
+```
+
+We have it, every time we want to install something from the testing branch, we'll do it like that (this will update the apache2 package, when asked, maintain the current config files):
+
+```bash
+apt-get install -t stretch php7.0-cli libapache2-mod-php7.0
+```
+
+Restart apache, and create a new file for print php info:
+
+```bash
+nano /var/www/html/info.php
+```
+
+Then add the following typical php code:
+
+```bash
+<?php phpinfo(); ?>
+```
+
+Now open from your client browser the following url: http://your_raspbian_server_ip/info.php, if everything went fine you will see the common php information page.
+
+We are done with PHP installation, now we remove the info file for security reasons:
+
+```bash
+rm -i /var/www/html/info.php
+```
+
+This is starting to look nice! Next story, "TLS/SSL", see you soon.
+
+### TLS/SSL
 
 ## Security
 
