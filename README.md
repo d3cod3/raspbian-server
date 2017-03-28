@@ -736,7 +736,7 @@ apt-get install apache2
 
 Now, from a client browser, let's check if it's working, copy in the url the ip of your Raspberry server and hit enter
 
-![CERN First WWW Server](http://www.d3cod3.org/RSS/apache_screenshot.jpg)
+![Apache web server](http://www.d3cod3.org/RSS/apache_screenshot.jpg)
 
 That's it, Apache installed, and up&running! Now the configuration:
 
@@ -962,6 +962,8 @@ Then add the following typical php code:
 ```
 
 Now open from your client browser the following url: http://your_raspbian_server_ip/info.php, if everything went fine you will see the common php information page.
+
+![PHP Install](http://www.d3cod3.org/RSS/php_install.jpg)
 
 We are done with PHP installation, now we remove the info file for security reasons:
 
