@@ -135,6 +135,12 @@ Let's install and configure all the essentials for our Raspbian Secure Server, n
 
 # Configuration
 
+First of all, install some package downloader utils:
+
+```bash
+apt-get install apt-utils
+```
+
 We will need to get comfortable with edit a lot of text files, maybe some programming too :P, so we begin installing our favorite console text editor, i'm going to use "nano", but there are better options like "vim", choose here whatever suits you:
 
 ```bash
@@ -829,7 +835,7 @@ Restart apache again, we got it! Now it's time for the newt component, the MySQL
 First step, install it, easy (always use strong passwords):
 
 ```bash
-apt-get install mysql-server php5-mysql
+apt-get install mysql-server
 ```
 
 And, to secure the install:
@@ -878,10 +884,72 @@ apt-get update
 We have it, every time we want to install something from the testing branch, we'll do it like that (this will update the apache2 package, when asked, maintain the current config files):
 
 ```bash
-apt-get install -t stretch php7.0-cli libapache2-mod-php7.0
+apt-get install -t stretch php7.0-cli php7.0-dev php-pear libapache2-mod-php7.0 php7.0-mysql php7.0-mcrypt php7.0-sqlite3 php7.0-bcmath php7.0-bz2 php7.0-curl php7.0-gd php7.0-imap php7.0-mbstring php7.0-odbc php7.0-pgsql php7.0-soap php7.0-xml php7.0-xmlrpc php7.0-zip
 ```
 
-Restart apache, and create a new file for print php info:
+This one we'll need to wait a little longer, so we have some time to clarify something here, the moment we use the testing branch (from debian stretch), we are mixing "not yet marked stable" packages in our system, this is not a good policy for a security oriented server, but an older release of php is surely a worst case scenario, so buckle up, we just passed to the next level, little bit more challenging, feels scary but don't lie, you're liking it!
+
+Now the last module, a specific one for [GnuPG](https://gnupg.org/) for encryption:
+
+```bash
+apt-get install -t stretch gnupg libgpg-error-dev libassuan-dev
+```
+
+Go to a temp folder and download gpgme library:
+
+```bash
+wget https://www.gnupg.org/ftp/gcrypt/gpgme/gpgme-1.8.0.tar.bz2
+```
+
+Extract, configure, make && make install:
+
+```bash
+tar xvfj gpgme-1.8.0.tar.bz2 && cd gpgme-1.8.0 && ./configure
+```
+
+Then
+
+```bash
+make && make install
+```
+
+and
+
+```bash
+pecl install gnupg
+```
+
+last one, open /etc/php/7.0/apache2/conf.d/20-gnupg.ini
+
+```bash
+nano /etc/php/7.0/apache2/conf.d/20-gnupg.ini
+```
+
+and add the following line:
+
+```bash
+extension=gnupg.so
+```
+
+Save & close the file, and to fix a little library loading issue, open this new file:
+
+```bash
+nano /etc/ld.so.conf.d/userlib.conf
+```
+
+then add this line:
+
+```bash
+/usr/local/lib
+```
+
+Save/close the file, and rerun ldconfig to rebuild the cache:
+
+```bash
+ldconfig
+```
+
+Finally restart apache, and create a new file for print php info:
 
 ```bash
 nano /var/www/html/info.php
@@ -901,9 +969,57 @@ We are done with PHP installation, now we remove the info file for security reas
 rm -i /var/www/html/info.php
 ```
 
-This is starting to look nice! Next story, "TLS/SSL", see you soon.
+This is starting to look nice!
 
-### TLS/SSL
+Ok, let's hit pause for a moment, and take a better look at what we have at the moment:
+
+```bash
+service --status-all
+```
+
+This command will give us the complete list of services available on our server, where [ + ] means service started, [ - ] service stopped, and [ ? ] state unknown.
+
+But let's take a deep look with another program:
+
+```bash
+apt-get install chkconfig
+```
+
+and
+
+```bash
+chkconfig --list
+```
+
+This will show us the availability of our services at all different runlevels. No room here for a runlevel class, so [here](https://en.wikipedia.org/wiki/Runlevel) some more info.
+
+And another really powerful tool for discovering services is the systemd init system:
+
+```bash
+systemctl list-units -t service
+```
+
+And as we did before with netstat, let's check all active tcp connections:
+
+```bash
+netstat -atp
+```
+
+My output:
+
+```bash
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 localhost:smtp          *:*                     LISTEN      1151/exim4
+tcp        0      0 192.168.1.104:22        *:*                     LISTEN      310/sshd
+tcp        0      0 localhost:mysql         *:*                     LISTEN      781/mysqld
+tcp        0     92 raspbian.ip.number:22   client.ip.number:port   ESTABLISHED 1188/sshd: username
+tcp6       0      0 localhost:smtp          [::]:*                  LISTEN      1151/exim4
+tcp6       0      0 [::]:http               [::]:*                  LISTEN      736/apache2
+```
+
+As you can see, we have our newly installed apache2 and mysql services listening, our active ssh connection established, and a new one, the exim4 service listening too, but hey, we do not install this exim4, what is that? Well, when we installed php7, one of his dependencies is the exim4 service for sending emails, so the system installed it automatically, but don't sweat it, we will talk about that later, and in case we don't need it, we will remove it, securing a server, is keeping it clean from stuff we don't use, too.
+
+Next story? See you soon!
 
 ## Security
 
@@ -914,6 +1030,10 @@ This is starting to look nice! Next story, "TLS/SSL", see you soon.
 ### IDS (Intrusion Detection System)
 
 ## Hardening
+
+## Availability
+
+### TLS/SSL
 
 ## Hide
 

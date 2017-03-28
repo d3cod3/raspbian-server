@@ -1,4 +1,7 @@
 # REALLY BASIC web server Rules
+
+# SSH (22), DNS (53), HTTP (80), HTTPS (443)
+
 iptables -F
 
 iptables -A INPUT -p tcp --dport 22 -j ACCEPT
