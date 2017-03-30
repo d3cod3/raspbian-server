@@ -265,6 +265,60 @@ For the most curious, -i specify the identity_file (your private key from the ke
 
 7 - For more info about securing services, take a look at the [debian manual](https://www.debian.org/doc/manuals/securing-debian-howto/ch-sec-services.en.html)
 
+Now let's harden our SSH for protection against [brute force attacks](https://en.wikipedia.org/wiki/Brute-force_attack), installing **fail2ban**
+
+### Fail2ban (Special Section)
+
+fail2ban provides a way to automatically protect virtual servers from malicious behavior. The program works by scanning through log files and reacting to offending actions such as repeated failed login attempts.
+
+```bash
+apt-get install fail2ban
+```
+
+Now make a local copy of the configuration file:
+
+```bash
+cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+```
+
+And go on configuring it (the elegant stuff):
+
+```bash
+nano /etc/fail2ban/jail.local
+```
+
+We start with the [DEFAULT] section, edit this lines:
+
+```bash
+ignoreip = 127.0.0.1/8 192.168.1.0/24
+bantime  = 3600
+maxretry = 3
+```
+
+This will whitelist the local direction (127.0.0.1/8) and the local net (192.168.1.0/24), and ban a malicious ip after 3 wrong login intents, for 1 hour (3600 seconds).
+
+Now to the [JAILS] section, under ssh you'll see:
+
+```bash
+enabled  = true
+port     = ssh
+filter   = sshd
+logpath  = /var/log/auth.log
+maxretry = 6
+```
+
+This are the specific settings for SSH service, we don't need to change it, but in case you change the standard port for ssh (22) to another, you'll need to set it up:
+
+```bash
+port     = 33000 # for example
+```
+
+Perfect, we have it, save the file, close it and restart fail2ban:
+
+```bash
+/etc/init.d/fail2ban restart
+```
+
 Ok, user configuration and SSH login secured and tested, if everything is working correctly, next story, "Net".
 
 ## Net
@@ -1027,9 +1081,9 @@ Next story? See you soon!
 
 ### Firewall
 
-### Fail2Ban
+### Tripwire Intrusion Detection System
 
-### IDS (Intrusion Detection System)
+### psad Network Intrusion Detection System
 
 ## Hardening
 
