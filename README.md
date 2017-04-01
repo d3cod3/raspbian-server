@@ -1073,26 +1073,192 @@ tcp6       0      0 localhost:smtp          [::]:*                  LISTEN      
 tcp6       0      0 [::]:http               [::]:*                  LISTEN      736/apache2
 ```
 
-As you can see, we have our newly installed apache2 and mysql services listening, our active ssh connection established, and a new one, the exim4 service listening too, but hey, we do not install this exim4, what is that? Well, when we installed php7, one of his dependencies is the exim4 service for sending emails, so the system installed it automatically, but don't sweat it, we will talk about that later, and in case we don't need it, we will remove it, securing a server, is keeping it clean from stuff we don't use, too.
+As you can see, we have our newly installed apache2 and mysql services listening, our active ssh connection established, and a new one, the exim4 service listening too, but hey, we do not install this exim4, what is that? Well, when we installed php7, one of his dependencies is the exim4 service for sending system information to internal users, so the system installed it automatically.
 
-Next story? See you soon!
-
-## Security
-
-### Firewall
-
-### Tripwire Intrusion Detection System
-
-### psad Network Intrusion Detection System
-
-## Hardening
-
-## Availability
-
-### TLS/SSL
+So here we are, our server is starting to get all the pieces in place. Next story? Hide our SSH service!
 
 ## Hide
 
-## Attack (Testing)
+This is the last last layer of security we are going to add to our SSH and SFTP services, it is some kind of advanced obfuscation technique, so not everyone will agree that it is really useful, but hey, in my opinion it can add some trouble for an attacker trying to own our server, so here we go, let's install a port knocker!
+And what is a port knocker? Is a special type of disguised service that listen for a specific sequence of "knocks" on a predefined list of ports, when this list of port is correctly "knocked" this service opens temporarily a specified port (our enter door to the server, the SSH port 22) in order to obtain access, and close it again after we log in.
+It's the same as knocking at your house door with a predefined knocking code, then someone open the door, and close it again after you are inside.
+So, in terms of visibility (port scanning for example), our server will be invisible, because at the question: is the SSH port listening?, the answer will be NO.
+
+### Port Knock
+
+Let's get to it, install the debian standard port knocker:
+
+```bash
+apt-get install knockd
+```
+
+Then edit his main config file, /etc/knockd.conf, you will have something like this:
+
+```bash
+[options]
+        UseSyslog
+
+[openSSH]
+       sequence    = 7000,8000,9000
+       seq_timeout = 5
+       command     = /sbin/iptables -A INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+       tcpflags    = syn
+
+[closeSSH]
+       sequence    = 9000,8000,7000
+       seq_timeout = 5
+       command     = /sbin/iptables -D INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+       tcpflags    = syn
+```
+
+And change it to something like this:
+
+```bash
+[options]
+        UseSyslog
+
+#[openSSH]
+#       sequence    = 7000,8000,9000
+#       seq_timeout = 10
+#       command     = /sbin/iptables -A INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+#       tcpflags    = syn
+
+#[closeSSH]
+#       sequence    = 9000,8000,7000
+#       seq_timeout = 10
+#       command     = /sbin/iptables -D INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+#       tcpflags    = syn
+
+[SSH]
+        sequence        = 5004,1233,8732,1112,6
+        seq_timeout     = 10
+        cmd_timeout     = 15
+        start_command   = /sbin/iptables -I INPUT 1 -s %IP% -p tcp --dport 22 -j ACCEPT
+        stop_command    = /sbin/iptables -D INPUT -s %IP% -p tcp --dport 22 -j ACCEPT
+        tcpflags        = syn
+```
+
+Let's see, we commented out the [openSSH] and [closeSSH] blocks, and added a new block called [SSH], this is because we want to automatically close the port 22 some seconds after we opened it, we do not want to have different knocking sequences for first open and then later close the port.
+In our new [SSH] block we configured the port knocking sequence with a random port sequence (i've used 5004,1233,8732,1112,6, you choose yours), the time for receiving the knocks (seq_timeout), the time the system wait to close the port after the opening (cmd_timeout), then the command for open the port (start_command, an iptables rule that momentarily give us access to the port), and finally the closing command (stop_command).
+
+Ok, so now edit another file, /etc/default/knockd and make it look like this:
+
+```bash
+################################################
+#
+# knockd's default file, for generic sys config
+#
+################################################
+
+# control if we start knockd at init or not
+# 1 = start
+# anything else = don't start
+#
+# PLEASE EDIT /etc/knockd.conf BEFORE ENABLING
+START_KNOCKD=1
+
+# command line options
+KNOCKD_OPTS="-i eth0"
+```
+
+That's it, restart the knockd service and test it:
+
+```bash
+/etc/init.d/knockd restart
+```
+
+Now, before we finish to configure the firewall and hide our SSH service, we have to make sure this is working, because is we do not configure it properly, or something go wrong, we will be closed out by our server!!! The firewall will close the port 22, and we will need to access directly to the server to fix the issue (not a problem if your server is in your room, a little worst if the server is elsewhere...)
+So, let's test it!
+
+**From a client machine**, create the following script:
+
+```bash
+#!/bin/bash
+
+for x in 5004,1233,8732,1112,6;
+do nmap -Pn --host_timeout 201 --max-retries 0 -p $x your.rpi.server.number;
+done
+```
+
+Change the port sequence accordingly and the server IP, and save it the script as knock_rpi.sh
+
+If you don't have nmap installed in your client, install it, [nmap](https://nmap.org/)
+
+The moment of truth, run from a terminal in your client:
+
+```bash
+sh knock_rpi.sh
+```
+
+Then in your server print the iptables rules:
+
+```bash
+iptables -L -v
+```
+
+If everything went right, you will see something similar to this line at the beginning of the INPUT chain:
+
+```bash
+27  1872 ACCEPT     tcp  --  any    any     your.client.ip.number        anywhere             tcp dpt:ssh
+```
+
+That's it, this is the line tha knockd temporarily add to the firewall in order to let us in via port 22.
+
+If we print the iptables rules again, this rule had disappeared because knockd command will timeout, so server hidden again.
+
+Ok, last step, we need to delete from our firewall the rule we configured before about listening at port 22, remember? :
+
+```bash
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+In order to do that we open the file /etc/iptables/rules.v4:
+
+```bash
+nano /etc/iptables/rules.v4
+```
+
+And remove this line:
+
+```bash
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+```
+
+This is it! Restart our server and try it!
+
+```bash
+shutdown -r now
+```
+
+Now, if we try to connect via SSH like always, the server will not respond, because the port 22 is actually closed! In order to SSH into our server we need to "knock" before, and then ask for a ssh connection.
+
+So:
+
+```bash
+sh knock_rpi.sh
+```
+
+Then later (like always):
+
+```bash
+ssh -i ~/.ssh/your_rsa_key_name -p 22 username@RPi_ip_number
+```
+
+And that's it, SSH service well hidden!
+
+This will be the same for SFTP connection, "knock" before ask for connection!
+
+Well, we have done most of the job, we almost have our secure server, we just need to secure something more, then configure our domain DNS, configure our local router, and finally start using it.
+But don't rush, one step at the time, next story, "Fingerprint Your Files"
+
+## Security
+
+### Tripwire Intrusion Detection System
+
+### RKHunter
+
+### psad Network Intrusion Detection System
+
+### TLS/SSL
 
 ## Your 50€ dedicated server (50DS)
