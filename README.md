@@ -417,6 +417,7 @@ So far so good, we have now a decent secure access door to our Raspbian server, 
 From [wikipedia](https://en.wikipedia.org/wiki/Server_(computing)): "Servers can provide various functionalities, often called 'services',  such as sharing data or resources among multiple clients, or performing computation for a client."
 
 ![CERN First WWW Server](https://upload.wikimedia.org/wikipedia/commons/2/2c/First-server-cern-computer-center.jpg)
+**The first HTTP web server of the history, year 1990 (from CERN, where they actually invented the web!)**
 
 Why are we building a server? This is what you need to ask yourself just now! Because depending on what the answer will be, the content of this chapter will eventually change a lot, but anyway, we'll tray to stay cool and cover at least all the basic services, and maybe something more, but enough with the chatting, let's get to it.
 There is no better or specific order to install services, in general at least, so i will use mine but you feel free to change it, and of course contributions are welcome and really appreciated.
@@ -1084,7 +1085,7 @@ And what is a port knocker? Is a special type of disguised service that listen f
 It's the same as knocking at your house door with a predefined knocking code, then someone open the door, and close it again after you are inside.
 So, in terms of visibility (port scanning for example), our server will be invisible, because at the question: is the SSH port listening?, the answer will be NO.
 
-### Port Knock
+### PortKnock
 
 Let's get to it, install the debian standard port knocker:
 
