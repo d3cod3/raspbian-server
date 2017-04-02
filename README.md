@@ -1254,12 +1254,164 @@ But don't rush, one step at the time, next story, "Fingerprint Your Files"
 
 ## Security
 
-### Tripwire Intrusion Detection System
+Let's say it, this was not so difficult in the end, we are now reaching the end of our journey, and this doesn't mean we looked at everything nor that we are now good sysadmin security experts, nothing more far from the truth actually, this field is an incredibly complex one, especially for online servers, it needs dedication, continuos update (on personal side as on machine side), imagination and a lot of hours of practice, really a lot!
+So, we are not experts yet, but maybe some of us will be one day, who knows. In the meantime, let's finish our basic security configuration for our Raspbian personal server, intrusion detection systems, here we go.
 
 ### RKHunter
+
+RKHunter is a [rootkit](https://en.wikipedia.org/wiki/Rootkit) protection system. Rootkits are an extremely dangerous problems for online servers, once secretly installed on servers, they permit intruders to repeatedly enter the server without been detected. In short, if a server have a unresolved vulnerability, some attacker could use it to install a rootkit, then imagine that the sysadmin of the server fix the vulnerability, the server is now secure! but the invisible rootkit is already there, so the attacker can come back whenever he/she want, through the rootkit that was installed.
+
+So, it's a good idea to install RKhunter, it will help us to protect our system from this kinds of problems, let's do it:
+
+```bash
+apt-get install -t stretch libwww-perl
+```
+
+We need to install it from the testing repo because some dependencies of rkhunter was previously installed by the php installation.
+
+```bash
+apt-get install -t stretch rkhunter
+```
+
+This will install the rkhunter 1.4.2, let's check it:
+
+```bash
+rkhunter --versioncheck
+```
+
+Ok, now we perform an update of our data files, some kind of "base" information about our filesystem that rkhunter will use for checks:
+
+```bash
+rkhunter --update
+```
+
+Now we confir to rkhunter that this is the baseline from which to do the checks:
+
+```bash
+rkhunter --propupd
+```
+
+Perfect, we are ready to perform our initial run, this will probably produce some warnings, but don't worry, this is expected:
+
+```bash
+rkhunter -c --enable all --disable none
+```
+
+This will take his time, and will ask to press enter for execute different checks.
+
+Ok, log saved, open it and review:
+
+```bash
+nano /var/log/rkhunter.log
+```
+
+Then search for "Warning", i have the following:
+
+```bash
+...
+Warning: Found preloaded shared library: /usr/lib/arm-linux-gnueabihf/libarmmem.so
+...
+Warning: The command '/sbin/chkconfig' has been replaced by a script: /sbin/chkconfig: Perl script, ASCII text executable
+...
+Warning: The following processes are using deleted files:
+Process: /usr/sbin/apache2    PID: 673    File: /tmp/.ZendSem.BwxJJJ
+Process: /usr/sbin/mysqld    PID: 794    File: /tmp/ibI3FUpC
+Process: /usr/sbin/apache2    PID: 3078    File: /tmp/.ZendSem.BwxJJJ
+Process: /usr/sbin/apache2    PID: 3079    File: /tmp/.ZendSem.BwxJJJ
+Process: /usr/sbin/apache2    PID: 3080    File: /tmp/.ZendSem.BwxJJJ
+Process: /usr/sbin/apache2    PID: 3081    File: /tmp/.ZendSem.BwxJJJ
+Process: /usr/sbin/apache2    PID: 3082    File: /tmp/.ZendSem.BwxJJJ
+...
+Warning: Process '/usr/sbin/knockd' (PID 366) is listening on the network.
+...
+```
+
+Another way to perform a complete check printing warning only is:
+
+```bash
+rkhunter -c --enable all --disable none --rwo
+```
+
+We have now a simple example of rkhunter warning, let's configure it a little:
+
+```bash
+nano /etc/rkhunter.conf
+```
+
+First, we set up local mail for receiving notification when rkhunter hits a warning:
+
+```bash
+MAIL-ON-WARNING=root@localhost
+MAIL_CMD=mail -s "[rkhunter] Warnings found for ${HOST_NAME}"
+```
+
+Then we'll fix the warnings that told us that some binary packages have been replaced by scripts:
+
+```bash
+SCRIPTWHITELIST=/sbin/chkconfig
+```
+
+Next, allow apache2 and mysqld process to use deleted files, this is not ALWAYS the better thing to do, but in our case, we have a clean box, no one has touched our server (at least in my case) apart from me, and we haven't open it to the internet yet, so, it is not crazy to consider this a false positive, in which case i decided to whitelist it:
+
+```bash
+ALLOWPROCDELFILE=/usr/sbin/apache2
+ALLOWPROCDELFILE=/usr/sbin/mysqld
+```
+
+Next, we whitelist a specific rpi arm preloaded shared library that is giving us another false positive:
+
+```bash
+SHARED_LIB_WHITELIST=/usr/lib/arm-linux-gnueabihf/libarmmem.so
+```
+
+And finally, the last one (in my case), we have knockd installed and listening to the network interface (our port knocker), so we need to whitelist it:
+
+```bash
+ALLOWPROCLISTEN=/usr/sbin/knockd
+```
+
+Ok, we check the configuration for errors:
+
+```bash
+rkhunter -C
+```
+
+If no errors, then we re-run a check again:
+
+```bash
+rkhunter -c --enable all --disable none --rwo
+```
+
+RKHunter will tell us here that the rkhunter.conf file properties has changed, fine, so we update his db (set a new baseline):
+
+```bash
+rkhunter --propupd
+```
+
+That's it, we are ready for the last step, automate the checks with a [CRON job](https://en.wikipedia.org/wiki/Cron):
+
+```bash
+crontab -e
+```
+
+This will open our crontab file for edit, here we will add a line that will tell the system to run an rkhunter check every day at the specified time:
+
+```bash
+25 05 * * * /usr/bin/rkhunter --cronjob --update --quiet
+```
+
+In this line we are telling cron to launch rkhunter check at 05:25am every day, and as configured, if it finds some warnings, we'll receive an email at the specified mail with the details.
+
+We have it! RKHunter ready and running checks every day, amazing! But remember, you'll need to check regularly for messages about warnings, at least once a week, in order to keep everything in order, every new change in the system could be recognized as a warning by rkhunter, so we'll need to always take a look a keep it clean from false positives, if we want to be able in the future to recognize real bad files.
+
+Perfect, we'll now install and configure a network intrusion detection, next story PSAD!
 
 ### psad Network Intrusion Detection System
 
 ### TLS/SSL
+
+### Tripwire Intrusion Detection System
+
+Tripwire is host-based intrusion detection system (HIDS).
 
 ## Your 50€ dedicated server (50DS)
