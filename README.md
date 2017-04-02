@@ -1085,7 +1085,7 @@ And what is a port knocker? Is a special type of disguised service that listen f
 It's the same as knocking at your house door with a predefined knocking code, then someone open the door, and close it again after you are inside.
 So, in terms of visibility (port scanning for example), our server will be invisible, because at the question: is the SSH port listening?, the answer will be NO.
 
-### PortKnock
+### Port Knock
 
 Let's get to it, install the debian standard port knocker:
 
@@ -1414,4 +1414,4 @@ Perfect, we'll now install and configure a network intrusion detection, next sto
 
 Tripwire is host-based intrusion detection system (HIDS).
 
-## Your 50€ dedicated server (50DS)
+## Your 80€ dedicated server (80DS)
