@@ -1427,7 +1427,7 @@ apt-get install -t stretch psad
 Now the firewall config, let's add the necessary rules to our firewall (iptables) to let psad do the work:
 
 ```bash
-iptables -A INPUT -j LOG --log-prefix "iptables: " && iptables -A FORWARD -j LOG --log-prefix "iptables: "
+iptables -A INPUT -j LOG && iptables -A FORWARD -j LOG
 ```
 
 That's it, this was super easy!
@@ -1444,6 +1444,10 @@ And start by configuring the scans detection, search and change the following:
 HOSTNAME    pi; # or whatever hostname you set on your raspbian server, if you don't know it, use the "hostname" command
 IPT_SYSLOG_FILE         /var/log/syslog;
 IGNORE_PORTS            your_port_knocking_ports;
+ENABLE_PERSISTENCE          N;
+MAX_SCAN_IP_PAIRS           50000;
+MIN_DANGER_LEVEL            3;
+EMAIL_ALERT_DANGER_LEVEL    4;
 ```
 
 Now implement intrusion detection, but first update psad signature definitions and restart the service:
@@ -1465,7 +1469,7 @@ Then wait for finish or stop it after a while, then run on server:
 psad -S
 ```
 
-AHHHHHHHHHH! Don't worry it was you with your port scan doing all that. This is the current status of psad service, cool eh? A lot of info about our server network!
+AHHHHHHHHHH! Don't worry, it was you with your port scan doing all that. This is the current status of psad service, cool eh? A lot of info about our server network!
 Very good, now it's time to edit some more config:
 
 ```bash
@@ -1689,4 +1693,4 @@ Next story, TLS/SSL certificates.
 
 ## HOME ROUTER SETTINGS
 
-## Your 80€ dedicated server (80DS)
+## Your 80€ dedicated server (80DS)
