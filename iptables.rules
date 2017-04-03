@@ -25,8 +25,8 @@ iptables -A OUTPUT -p udp --dport 53 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 25 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p tcp --sport 25 -m state --state ESTABLISHED -j ACCEPT
 
-iptables -A INPUT -j LOG
-iptables -A FORWARD -j LOG
+iptables -A INPUT -j LOG --log-prefix "iptables: "
+iptables -A FORWARD -j LOG --log-prefix "iptables: "
 
 iptables -P INPUT DROP
 iptables -P OUTPUT DROP
