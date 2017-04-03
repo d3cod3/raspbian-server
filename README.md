@@ -732,7 +732,7 @@ Allow loopback access (**-I INPUT 1** place this rule first in the list, IMPORTA
 iptables -I INPUT 1 -i lo -j ACCEPT
 ```
 
-And do not forget to permit outgoing connections (for apt-get, web browsing, etc..)
+And do not forget to permit outgoing connections (for apt-get, web browsing, sendmail, etc..)
 
 ```bash
 iptables -F OUTPUT  # remove your existing OUTPUT rules if you have some
@@ -741,6 +741,8 @@ iptables -A OUTPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 53 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p udp --dport 53 -m state --state NEW -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 25 -m state --state NEW -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 25 -m state --state ESTABLISHED -j ACCEPT
 iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -P OUTPUT DROP
 iptables -P FORWARD DROP
@@ -940,6 +942,12 @@ We have it, every time we want to install something from the testing branch, we'
 
 ```bash
 apt-get install -t stretch php7.0-cli php7.0-dev php-pear libapache2-mod-php7.0 php7.0-mysql php7.0-mcrypt php7.0-sqlite3 php7.0-bcmath php7.0-bz2 php7.0-curl php7.0-gd php7.0-imap php7.0-mbstring php7.0-odbc php7.0-pgsql php7.0-soap php7.0-xml php7.0-xmlrpc php7.0-zip
+```
+
+And, to fix some issues due to this change of repo:
+
+```bash
+apt-get install -t stretch mailutils maildir-utils sendmail-bin
 ```
 
 This one we'll need to wait a little longer, so we have some time to clarify something here, the moment we use the testing branch (from debian stretch), we are mixing "not yet marked stable" packages in our system, this is not a good policy for a security oriented server, but an older release of php is surely a worst case scenario, so buckle up, we just passed to the next level, little bit more challenging, feels scary but don't lie, you're liking it!
@@ -1408,10 +1416,277 @@ Perfect, we'll now install and configure a network intrusion detection, next sto
 
 ### psad Network Intrusion Detection System
 
-### TLS/SSL
+**psad** stands for port scan attack detection, and is a software that monitors firewall logs to determine is a scan/attack is in progress. It can alert system administrators, like rkhunter via mail, or it can take active steps to deter the threat.
+
+As always, let's install it:
+
+```bash
+apt-get install -t stretch psad
+```
+
+Now the firewall config, let's add the necessary rules to our firewall (iptables) to let psad do the work:
+
+```bash
+iptables -A INPUT -j LOG --log-prefix "iptables: " && iptables -A FORWARD -j LOG --log-prefix "iptables: "
+```
+
+That's it, this was super easy!
+
+Now it's the config time, open the psad config file:
+
+```bash
+nano /etc/psad/psad.conf
+```
+
+And start by configuring the scans detection, search and change the following:
+
+```bash
+HOSTNAME    pi; # or whatever hostname you set on your raspbian server, if you don't know it, use the "hostname" command
+IPT_SYSLOG_FILE         /var/log/syslog;
+IGNORE_PORTS            your_port_knocking_ports;
+```
+
+Now implement intrusion detection, but first update psad signature definitions and restart the service:
+
+```bash
+psad --sig-update && /etc/init.d/psad restart
+```
+
+But before implement the intrusion detection, let's play a little, we are going to do a port scan!!!
+From a client run this on a terminal:
+
+```bash
+sudo nmap -PN -sS your_rpi_server_ip
+```
+
+Then wait for finish or stop it after a while, then run on server:
+
+```bash
+psad -S
+```
+
+AHHHHHHHHHH! Don't worry it was you with your port scan doing all that. This is the current status of psad service, cool eh? A lot of info about our server network!
+Very good, now it's time to edit some more config:
+
+```bash
+nano /etc/psad/auto_dl
+```
+
+Then add:
+
+```bash
+127.0.0.1       0;
+your.local.machine.ip   0; # local machine
+```
+
+This will exempt those ip numbers from psad intrusion detection system, good so we don't ever end locked out from our server.
+
+Now go back to the psad main config file /etc/psad/psad.conf end edit the following:
+
+```bash
+ENABLE_AUTO_IDS         Y;
+AUTO_IDS_DANGER_LEVEL       4;
+AUTO_BLOCK_TIMEOUT          3600;
+```
+
+This will enable the auto firewall configuration, banning a specific ip for 60 minutes if detected a danger level 4 (a normal SYN scan for example), we got it!
+
+It's testing time, from another client connected to your local network, not from the one where you have the current SSH connection open, run this command:
+
+```bash
+sudo nmap -PN -sS your_rpi_server_ip
+```
+
+In the meantime, close your ssh connection and reconnect, then on your server show the actual iptables rules:
+
+```bash
+iptables -S
+```
+
+My output:
+
+```bash
+...
+N PSAD_BLOCK_FORWARD
+-N PSAD_BLOCK_INPUT
+-N PSAD_BLOCK_OUTPUT
+...
+-A PSAD_BLOCK_FORWARD -d the.scanning.client.ip/32 -j DROP
+-A PSAD_BLOCK_FORWARD -s the.scanning.client.ip/32 -j DROP
+-A PSAD_BLOCK_INPUT -s the.scanning.client.ip/32 -j DROP
+-A PSAD_BLOCK_OUTPUT -d the.scanning.client.ip/32 -j DROP
+...
+```
+
+As you can see psad added a new chain with new rules to our firewall, and the scanning ip number is banned now!!! YHEAAAAAAAA! It's working!
+
+Now we'll couple **psad** with **tripwire**, and our Intrusion Detection System will become fairly good, but this is the next story.
 
 ### Tripwire Intrusion Detection System
 
-Tripwire is host-based intrusion detection system (HIDS).
+Tripwire is host-based intrusion detection system (HIDS), it collects details about our filesystem and configurations.
+
+First, install:
+
+```bash
+apt-get install tripwire
+```
+
+Answer yes to everything and set the passwords it asks.
+
+Then, similar as rkhunter, initialize the tripwire database:
+
+```bash
+tripwire --init
+```
+
+And we run a check saving the result into a file:
+
+```bash
+cd /etc/tripwire
+sh -c 'tripwire --check | grep Filename > test_results'
+```
+
+We have now a starting list of tripwire complains, let's configure it good to match our system:
+
+```bash
+nano /etc/tripwire/twpol.txt
+```
+
+In the "Boot Scripts" section we comment the /etc/rc.boot line, since this isn't present in our raspbian system:
+
+```bash
+#        /etc/rc.boot            -> $(SEC_BIN) ;
+```
+
+And the same for the "Root config files" section, comment all the lines from your test_results file. In my case:
+
+```bash
+/root                           -> $(SEC_CRIT) ; # Catch all additions to /root
+        /root/mail                      -> $(SEC_CONFIG) ;
+        #/root/Mail                     -> $(SEC_CONFIG) ;
+        #/root/.xsession-errors         -> $(SEC_CONFIG) ;
+        #/root/.xauth                   -> $(SEC_CONFIG) ;
+        #/root/.tcshrc                  -> $(SEC_CONFIG) ;
+        #/root/.sawfish                 -> $(SEC_CONFIG) ;
+        #/root/.pinerc                  -> $(SEC_CONFIG) ;
+        #/root/.mc                      -> $(SEC_CONFIG) ;
+        #/root/.gnome_private           -> $(SEC_CONFIG) ;
+        #/root/.gnome-desktop           -> $(SEC_CONFIG) ;
+        #/root/.gnome                   -> $(SEC_CONFIG) ;
+        #/root/.esd_auth                        -> $(SEC_CONFIG) ;
+        #/root/.elm                     -> $(SEC_CONFIG) ;
+        #/root/.cshrc                   -> $(SEC_CONFIG) ;
+        /root/.bashrc                   -> $(SEC_CONFIG) ;
+        /root/.bash_profile            -> $(SEC_CONFIG) ;
+        /root/.bash_logout             -> $(SEC_CONFIG) ;
+        /root/.bash_history             -> $(SEC_CONFIG) ;
+        #/root/.amandahosts             -> $(SEC_CONFIG) ;
+        #/root/.addressbook.lu          -> $(SEC_CONFIG) ;
+        #/root/.addressbook             -> $(SEC_CONFIG) ;
+        #/root/.Xresources              -> $(SEC_CONFIG) ;
+        #/root/.Xauthority              -> $(SEC_CONFIG) -i ; # Changes Inode number on login
+        #/root/.ICEauthority                -> $(SEC_CONFIG) ;
+```
+
+Almost done, we had some complains about some files descriptors inside /proc filesystem, and this files changes all the time, so in order to avoid regular false positives, we'll remove the specific check over the general /proc folder and we'll add all directories under /proc that we want to check.
+Go to the "Devices & Kernel information" section and make it look like this:
+
+```bash
+        /dev            -> $(Device) ;
+        /dev/pts        -> $(Device) ;
+        #/proc          -> $(Device) ;
+        /proc/devices           -> $(Device) ;
+        /proc/net               -> $(Device) ;
+        /proc/tty               -> $(Device) ;
+        /proc/sys               -> $(Device) ;
+        /proc/cpuinfo           -> $(Device) ;
+        /proc/modules           -> $(Device) ;
+        /proc/mounts            -> $(Device) ;
+        /proc/filesystems       -> $(Device) ;
+        /proc/interrupts        -> $(Device) ;
+        /proc/ioports           -> $(Device) ;
+        /proc/self              -> $(Device) ;
+        /proc/kmsg              -> $(Device) ;
+        /proc/stat              -> $(Device) ;
+        /proc/loadavg           -> $(Device) ;
+        /proc/uptime            -> $(Device) ;
+        /proc/locks             -> $(Device) ;
+        /proc/meminfo           -> $(Device) ;
+        /proc/misc              -> $(Device) ;
+```
+
+And the last one, we need to comment out the /var/run and /var/lock lines so that our system does not flag normal filesystem changes by services:
+
+```bash
+        #/var/lock              -> $(SEC_CONFIG) ;
+        #/var/run               -> $(SEC_CONFIG) ; # daemon PIDs
+        /var/log                -> $(SEC_CONFIG) ;
+```
+
+DONE! With tripwire configured, first we recreate his encrypted policy:
+
+```bash
+twadmin -m P /etc/tripwire/twpol.txt
+```
+
+and reinitialize the database:
+
+```bash
+tripwire --init
+```
+
+If everything went right, we we'll have no warnings, so run a check:
+
+```bash
+tripwire --check
+```
+
+There we go, this will be a typical tripwire report.
+
+Let's clean the system from sensitive information:
+
+```bash
+rm /etc/tripwire/test_results
+rm /etc/tripwire/twpol.txt
+```
+
+Just in case we someday need to edit again the tripwire config, we'll need to temporarily recreate the plaintext file we just edited:
+
+```bash
+sh -c 'twadmin --print-polfile > /etc/tripwire/twpol.txt'
+```
+
+This is how we do it!
+
+Right, we are near the end of the story, we only need to set up tripwire email notification and automate checks with CRON, like we did it for rkhunter, let's get to it:
+
+```bash
+tripwire --check | mail -s "Tripwire report for `uname -n`" your@email
+```
+
+This will generate a tripwire report and send it to the specified mail. Just like that!
+
+What next then, well we add a new cron job to our cron table:
+
+```bash
+crontab -e
+```
+
+and we add this line:
+
+```bash
+30 3 * * * /usr/sbin/tripwire --check | mail -s "Tripwire report for `uname -n`" your@email
+```
+
+So, every day we will receive a report from our **tripwire** system, and another one from **rkhunter** in case it find some warnings.
+
+We are set and decently secured, we are at the last steps of our journey, we'll just need to secure apache with a TLS/SSL certificate from Let's Encrypt, then set up our hostnames we are going to host, and finally, correctly and securely configure our home router to have our amazing Raspbian Server available on the internet!!!!
+
+Next story, TLS/SSL certificates.
+
+### TLS/SSL
+
+## HOME ROUTER SETTINGS
 
 ## Your 80€ dedicated server (80DS)
