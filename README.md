@@ -1680,7 +1680,7 @@ crontab -e
 and we add this line:
 
 ```bash
-30 3 * * * /usr/sbin/tripwire --check | mail -s "Tripwire report for `uname -n`" your@email
+30 03 * * * /usr/sbin/tripwire --check | mail -s "Tripwire report for `uname -n`" your@email
 ```
 
 So, every day we will receive a report from our **tripwire** system, and another one from **rkhunter** in case it find some warnings.
@@ -1690,6 +1690,46 @@ We are set and decently secured, we are at the last steps of our journey, we'll 
 Next story, TLS/SSL certificates.
 
 ### TLS/SSL
+
+## HARDENING (BONUS)
+
+Kernel hardening and IPv6 disable, edit file /etc/sysctl.conf and add/edit:
+
+```bash
+# Turn on execshield
+kernel.exec-shield=1
+kernel.randomize_va_space=1
+...
+#Uncomment the next two lines to enable Spoof protection (reverse-path filter)
+# Turn on Source Address Verification in all interfaces to
+# prevent some spoofing attacks
+net.ipv4.conf.default.rp_filter=1
+net.ipv4.conf.all.rp_filter=1
+...
+# Do not send ICMP redirects (we are not a router)
+net.ipv4.conf.all.send_redirects = 0
+#
+# Do not accept IP source route packets (we are not a router)
+net.ipv4.conf.all.accept_source_route = 0
+#net.ipv6.conf.all.accept_source_route = 0
+#
+# Log Martian Packets
+net.ipv4.conf.all.log_martians = 1
+...
+# Disable IPv6
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+net.ipv6.conf.eth0.disable_ipv6 = 1
+```
+
+Now open file /etc/default/ntp and make it look like this:
+
+```bash
+NTPD_OPTS='-4 -g'
+```
+
+Reboot and enjoy!
 
 ## HOME ROUTER SETTINGS
 
