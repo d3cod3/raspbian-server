@@ -1691,6 +1691,23 @@ Next story, TLS/SSL certificates.
 
 ### TLS/SSL
 
+SSL certificates are used within web servers to encrypt the traffic between the server and client, providing extra security for users accessing your application. Let's Encrypt provides an easy way to obtain and install trusted certificates for free.
+
+Remember that in order to complete this step, you need to have already configured some domain (www.yourdomain.com) with DNS pointing to your home server (your home IP address).
+
+So we are going to install and configure our apache server with a TLS/SSL certificate from [Let's Encrypt](https://letsencrypt.org/), let's do it:
+
+```bash
+apt-get install augeas-lenses libaugeas0
+apt-get install -t stretch python-certbot-apache
+```
+
+Now set up the SSL certificate:
+
+```bash
+certbot --apache
+```
+
 ## HARDENING (BONUS)
 
 Kernel hardening and IPv6 disable, edit file /etc/sysctl.conf and add/edit:
