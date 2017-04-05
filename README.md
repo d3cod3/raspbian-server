@@ -1093,6 +1093,8 @@ And what is a port knocker? Is a special type of disguised service that listen f
 It's the same as knocking at your house door with a predefined knocking code, then someone open the door, and close it again after you are inside.
 So, in terms of visibility (port scanning for example), our server will be invisible, because at the question: is the SSH port listening?, the answer will be NO.
 
+But BEWARE! Port Knocking techniques are an open debate about actual efficiency and if we can really gain some more security with it, so search the internet and read about it, then choose if you want that on your server, or not.
+
 ### Port Knock
 
 Let's get to it, install the debian standard port knocker:
