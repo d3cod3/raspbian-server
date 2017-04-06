@@ -1710,6 +1710,26 @@ Now set up the SSL certificate:
 certbot --apache
 ```
 
+This will be really straightforward, the certbot mechanism will do all the work, answer his questions and you will have it!
+
+Now try to connect to https://www.yourdomain.whatever and that's it, SSL certificate up and running.
+
+Now, let's encrypt certificates needs to be renewed every 90 days, so the best is to automatize the check for renewal with a cronjob, open your crontab:
+
+```bash
+crontab -e
+```
+
+and add this line (customize the time at your wish):
+
+```bash
+00 4 * * 1 /usr/bin/certbot renew >> /var/log/le-renewal.log
+```
+
+That line means check, every monday at 04:00h if we need to renew our let's encrypt certificates, and if that's the case, renew them. Easy!
+
+We have it, our server is almost complete, next story, HARDENING!
+
 ## HARDENING (BONUS)
 
 Kernel hardening and IPv6 disable, edit file /etc/sysctl.conf and add/edit:
@@ -1751,5 +1771,16 @@ NTPD_OPTS='-4 -g'
 Reboot and enjoy!
 
 ## HOME ROUTER SETTINGS
+
+In order to be available on the internet, we'll need to open the specific ports for the specific services we want to offer to users, so, at home we have our fantastic Raspbian Server connected to the internet BEHIND our router, and even if the server is perfectly configured with his firewall, the router is, by default, completely closed for input connections, with the consequence of not letting no one reach our webpage on port 80 (http) or port 443 (https) because when we'll ask for it, our router will deny the access. This is actually good, if our router was completely open, probably our internet connection will be flooded in no time!
+
+So, remember here that, for every port you'll open on your router, that means availability but exposure too, and it's because of it that we are trying to build a pretty secure server.
+
+Enough chat, in short we'll need to access our router settings, in general at ip 192.168.1.1 (but now always, check your router user manual), and in the firewall section, or in the port forwarding section (it depends on the router model), we'll need to open the port for our specific server, for example, if we want to run a web server, we'll need to forward port 80 to port 80 of our Raspbian (pointing to the internal LAN server ip), and the same for port 443.
+Or, if we want to access via SSH from internet, we'll need to forward input port 22 to port 22 of the server internal LAN ip.
+
+The same for every other service you'll need.
+
+So do it, and then test your services, if everything was correct, your server is actually AVAILABLE!!! Congratulation!
 
 ## Your 80€ dedicated server (80DS)
