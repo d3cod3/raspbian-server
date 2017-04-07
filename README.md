@@ -70,6 +70,12 @@ mmcblk0     179:0    0  59.5G  0 disk
 └─mmcblk0p2 179:2    0  59.4G  0 part /
 ```
 
+or more human readable:
+
+```bash
+df -h --output=source,fstype,size,pcent,target -x tmpfs -x devtmpfs
+```
+
 This is just the beginning! In the next session we'll make a little post-install configuration, just the suggestions from [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) repo, next story, "Post-Install Config".
 
 # Post-Install Config
@@ -411,6 +417,27 @@ apt-get update && apt-get dist-upgrade -y && apt-get clean
 ```
 
 So far so good, we have now a decent secure access door to our Raspbian server, we can now start installing and configure all our services, more or less depending on what we'll need from our server, but this is the next chapter so, see you in a bit.
+
+## DNS
+
+Before continuing with our installs and configs, we need to tell the system where to ask for ip <--> domain names associations, and for that we need to use what is called Domain Name System Server (DNS server), basically we need to pass the system the ip of one or varios DNS servers so it will be able to get the ip of a domain or viceversa.
+
+We'll use the standard [OpenDNS](https://www.opendns.com) servers here, but feel free to use whatever you like more.
+
+So, edit the /etv/resolv.conf file:
+
+```bash
+nano /etc/resolv.conf
+```
+
+And add your DNS servers ip, in case of using OpenDNS's:
+
+```bash
+nameserver 208.67.222.222
+nameserver 208.67.220.220
+```
+
+Save the file, close it and reboot. DONE!
 
 ## Services
 
@@ -948,6 +975,7 @@ And, to fix some issues due to this change of repo:
 
 ```bash
 apt-get install -t stretch mailutils maildir-utils sendmail-bin
+apt-get install sensible-mda
 ```
 
 This one we'll need to wait a little longer, so we have some time to clarify something here, the moment we use the testing branch (from debian stretch), we are mixing "not yet marked stable" packages in our system, this is not a good policy for a security oriented server, but an older release of php is surely a worst case scenario, so buckle up, we just passed to the next level, little bit more challenging, feels scary but don't lie, you're liking it!
@@ -1784,3 +1812,27 @@ The same for every other service you'll need.
 So do it, and then test your services, if everything was correct, your server is actually AVAILABLE!!! Congratulation!
 
 ## Your 80€ dedicated server (80DS)
+
+This is the finish line, we've done it, but before we say goodbye, let's just take the final step, a step that a good sysadmin at least repeat once per week:
+
+1 - Check for updates and apply
+
+```bash
+apt-get update && apt-get dist-upgrade
+```
+
+2 - Update rkhunter
+
+```bash
+rkhunter --propupd
+```
+
+3 - Update tripwire
+
+```bash
+tripwire --init
+```
+
+4 - Time to go, our Raspbian Server is rock n rollin'.
+
+Finally, it's time for the conclusions, we can say that this journey was not so easy, neither always comfortable, but damn, it was adventurous, it was not? So, like the simplest comparative between tourists and travelers, this one was indeed one of travelers, don't you think?
