@@ -139,7 +139,7 @@ But don't worry, we are just getting started, a long journey awaits us, with so 
 
 Let's install and configure all the essentials for our Raspbian Secure Server, next story, "Configuration".
 
-# Configuration
+# Configuration
 
 First of all, install some package downloader utils:
 
@@ -228,6 +228,13 @@ nano /etc/ssh/sshd_config
 ```
 
 And change:
+
+0 - Disable ipv6
+
+```bash
+#ListenAddress ::
+ListenAddress 0.0.0.0
+```
 
 1 - Disallow SSH access to root account
 
@@ -912,7 +919,7 @@ Then append this an the end of /etc/apache2/apache2.conf:
 </IfModule>
 ```
 
-Restart apache again, we got it! Now it's time for the newt component, the MySQL Server!
+Restart apache again, we got it! Now it's time for the next component, the MySQL Server!
 
 ### MySQL Server
 
@@ -1111,6 +1118,364 @@ tcp6       0      0 [::]:http               [::]:*                  LISTEN      
 ```
 
 As you can see, we have our newly installed apache2 and mysql services listening, our active ssh connection established, and a new one, the exim4 service listening too, but hey, we do not install this exim4, what is that? Well, when we installed php7, one of his dependencies is the exim4 service for sending system information to internal users, so the system installed it automatically.
+
+Next story, a special bonus, Ruby on Rails!
+
+### Ruby on Rails with rbenv (EXTRA BONUS - INTERMEDIATE LEVEL!!!)
+
+Ruby on Rails is a rapid development web framework that allows web designers and developers to implement dynamic fully featured web applications.
+Personally, i believe that RoR is really a better option than PHP, and i'm not the only one, but anyway, search the internet and learn about it, you'll choose
+to have it or not on your personal server.
+
+Let's get to work! We start as always with the dependencies:
+
+```bash
+apt-get install autoconf bison build-essential curl libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm3 libgdbm-dev
+```
+
+and
+
+```bash
+apt-get install git-core
+```
+
+Right, now install, from github, [rbenv](https://github.com/rbenv/rbenv):
+
+```bash
+git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+```
+
+Adding his PATH for using the command line utility:
+
+```bash
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+
+source ~/.bashrc
+```
+
+Time to test it:
+
+```bash
+type rbenv
+```
+
+You should see this, if everything is fine:
+
+```bash
+rbenv is a function
+rbenv ()
+{
+    local command;
+    command="$1";
+    if [ "$#" -gt 0 ]; then
+        shift;
+    fi;
+    case "$command" in
+        rehash | shell)
+            eval "$(rbenv "sh-$command" "$@")"
+        ;;
+        *)
+            command rbenv "$command" "$@"
+        ;;
+    esac
+}
+```
+
+And remember, from time to time, to update rbenv, as it is installed from Git, we'll need to do it manually:
+
+```bash
+cd ~/.rbenv
+git pull
+```
+
+Perfect! Now install a rbenv plugin to make life easier, [ruby-build](https://github.com/rbenv/ruby-build):
+
+```bash
+git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+```
+
+At this point, we have all the tools to start installing ruby and configuring it properly, so let's install Ruby!
+
+So, here it comes our first dilemma, which version of Ruby? Well, rbenv help us with that, as it manage and organize,
+behind the curtain, one or multiple installed version of Ruby, cool!
+
+We can then list all versions available at the moment:
+
+```bash
+rbenv install -l
+```
+
+and choose one, i picked 2.3.3 this time:
+
+```bash
+rbenv install 2.3.3
+```
+
+BE ADVISED, this step can take a lot, maybe a lot as in go to lunch or whatever you prefer, but a coffee will not be enough!
+See you in a bit then :P
+
+OK, we are back and Ruby is installed, my output:
+
+```bash
+Installed ruby-2.3.3 to /home/your_username/.rbenv/versions/2.3.3
+```
+
+Last things, setting this version as default:
+
+```bash
+rbenv global 2.3.3
+```
+
+And test it, obviously:
+
+```bash
+ruby -v
+```
+
+My output:
+
+```bash
+ruby 2.3.3p222 (2016-11-21 revision 56859)
+```
+
+Great, now we need to configure Gems (packages that extend the functionality of Ruby), we turn off local documentation
+in order to have more speed, and we install a dependencies manager called **bundler** :
+
+```bash
+echo "gem: --no-document" > ~/.gemrc
+gem install bundler
+```
+
+My output:
+
+```bash
+Fetching: bundler-1.15.1.gem (100%)
+Successfully installed bundler-1.15.1
+1 gem installed
+```
+
+Let's check if the Gems path is correct:
+
+```bash
+gem env home
+```
+
+My output:
+
+```bash
+/home/your_username/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0
+```
+
+Fine, Gems is correctly set up, now we install Rails:
+
+```bash
+gem install rails
+```
+
+This one, could take a while...
+When finished, as always, we check the installed version:
+
+```bash
+rails -v
+```
+
+And my output is:
+
+```bash
+Rails 5.1.2
+```
+
+SUPER! Now we need to install JavaScript Runtime, because some Rails features depends on it:
+
+```bash
+cd /tmp
+\curl -sSL https://deb.nodesource.com/setup_6.x -o nodejs.sh
+```
+
+And we take a look at the script file we just downloaded (just in case):
+
+```bash
+less nodejs.sh
+```
+
+If we are satisfied and everything is correct, we quit by typing **q**
+
+Ok, let's install the NodeSource Node.js v6.x repo:
+
+```bash
+cat /tmp/nodejs.sh | sudo -E bash -
+```
+
+Where the -E flag used here will preserve the user's existing environment variables.
+
+Almost done, we now can simply install  nodejs via apt:
+
+```bash
+apt-get install nodejs
+```
+
+And that's it! We can start now testing our Ruby on Rails installation!
+There are different options to deploy a Ruby on Rails App, we will try here to use our already installed Apache web server,
+so, this is what we need, the Passenger Apache Module.
+Debian repository comes with an older version of the libapache2-mod-passenger, so we install the correct version through gem:
+
+```bash
+# First install some dependencies
+apt-get install libcurl4-openssl-dev apache2-threaded-dev
+
+# Install Passeneger module
+gem install passenger
+
+# Install Passenger + Apache module
+passenger-install-apache2-module
+```
+
+Now follow the instruction and the module will compile (damn fine cup of coffee time).
+
+We need now to properly configure apache in order to have Passenger working correctly:
+
+```bash
+nano /etc/apache2/mods-available/passenger.load
+```
+
+And copy the line suggested from previous Passenger install instruction:
+
+```bash
+LoadModule passenger_module /home/user/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/passenger-5.1.5/buildout/apache2/mod_passenger.so
+```
+
+Then:
+
+```bash
+nano /etc/apache2/mods-available/passenger.conf
+```
+
+And copy:
+
+```bash
+<IfModule mod_passenger.c>
+        PassengerRoot /home/your_user_name/.rbenv/versions/2.3.3/lib/ruby/gems/2.3.0/gems/passenger-5.1.5
+        PassengerDefaultRuby /home/your_user_name/.rbenv/versions/2.3.3/bin/ruby
+</IfModule>
+```
+
+And the last step, enable the module and restart apache:
+
+```bash
+a2enmod passenger
+service apache2 restart
+```
+
+Fine, now let's understand how to deploy our Rails applications, but in order to do that, we first need one!
+As always, we will use a testing app, and with the help the previously installed tools, it'll be super easy!
+
+We'll start creating a new directory for storing rails apps:
+
+```bash
+cd /home/your_username/ &&  mkdir your_rails_dev_folder_name
+```
+
+And we create a testing app:
+
+```bash
+rails new testapp --skip-bundle
+```
+
+Perfect, enter the directory and modify the Gemfile to install a JavaScript execution environment:
+
+```bash
+cd testapp && nano Gemfile
+```
+
+Now search for this line:
+
+```bash
+# gem 'therubyracer',  platforms: :ruby
+```
+
+uncomment it, save the file and close it.
+
+All right, now launch the automatic install (thanks (bundler)[https://bundler.io/]):
+
+```bash
+bundle install
+```
+
+WOW, we are almost finished, apache is running fine with Passenger module configured, Ruby on Rails is fine tuned with rbenv, now we'll check if everything is sound, and finally, we'll create a virtual host file for testing our rails app.
+
+So, the testing:
+
+```bash
+passenger-memory-stats
+```
+
+And my output:
+
+```bash
+--------- Apache processes ---------
+PID  PPID  VMSize    Resident  Name
+------------------------------------
+855  1     12.8 MB   6.3 MB    /usr/sbin/apache2 -k start
+899  855   232.1 MB  5.9 MB    /usr/sbin/apache2 -k start
+900  855   230.0 MB  4.2 MB    /usr/sbin/apache2 -k start
+
+
+-------- Nginx processes ---------
+
+
+
+---- Passenger processes -----
+PID   VMSize   Resident  Name
+------------------------------
+861   30.7 MB  8.1 MB    Passenger watchdog
+866   93.9 MB  11.4 MB   Passenger core
+877   39.1 MB  8.9 MB    Passenger ust-router
+```
+
+You can see the apache processes and the Passenger processes up and running, GREAT!
+
+Finally, we create a new virtual host file for our **testapp** rails app:
+
+```bash
+cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/testapp.conf
+nano /etc/apache2/sites-available/testapp.conf
+```
+
+The file need to look like this:
+
+```bash
+<VirtualHost *:80>
+
+        ServerAdmin webmaster@localhost
+        DocumentRoot /home/your_username/rails_folder/testapp/public
+        RailsEnv development
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        <Directory "/home/your_username/rails_folder/testapp/public">
+                Allow from all
+                Options -FollowSymLinks -MultiViews
+                Require all granted
+        </Directory>
+
+</VirtualHost>
+```
+
+Then, disable the default apache virtual host, enable the new **testapp** rails, and restart apache:
+
+```bash
+a2dissite 000-default
+a2ensite testapp
+service apache2 restart
+```
+
+AND THAT'S IT, PEOPLE! Open in your browser the ip of your raspbian server and check it out:
+
+
+![Raspbian RoR](http://www.d3cod3.org/RSS/raspbian_rails.jpg)
+
 
 So here we are, our server is starting to get all the pieces in place. Next story? Hide our SSH service!
 
