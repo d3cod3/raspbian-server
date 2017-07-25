@@ -2132,6 +2132,9 @@ Kernel hardening and IPv6 disable, edit file /etc/sysctl.conf and add/edit:
 kernel.exec-shield=1
 kernel.randomize_va_space=1
 ...
+# Disable tcp timestamps
+net.ipv4.tcp_timestamps = 0
+...
 #Uncomment the next two lines to enable Spoof protection (reverse-path filter)
 # Turn on Source Address Verification in all interfaces to
 # prevent some spoofing attacks

@@ -21,13 +21,33 @@ iptables -A OUTPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 53 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p udp --dport 53 -m state --state NEW -j ACCEPT
 
-# sendmail (output only)
+# SMTP (output only)
 iptables -A OUTPUT -p tcp --dport 25 -m state --state NEW -j ACCEPT
 iptables -A OUTPUT -p tcp --sport 25 -m state --state ESTABLISHED -j ACCEPT
 
+# Log INPUT and FORWARD
 iptables -A INPUT -j LOG
 iptables -A FORWARD -j LOG
 
+# PROTECT from Snoopers (Some)
+iptables -A INPUT -p tcp -m tcp ! --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -m limit --limit 5/min --limit-burst 7 -j LOG --log-prefix "TCP RST,ACK,FIN"
+iptables -A INPUT -p tcp -m tcp ! --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j DROP
+iptables -A INPUT -f -m limit --limit 5/min --limit-burst 7 -j LOG --log-prefix "Fragment Packets"
+iptables -A INPUT -f -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags SYN,RST SYN,RST -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -m limit --limit 5/min --limit-burst 7 -j LOG --log-prefix "NULL Packets"
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN FIN,SYN -m limit --limit 5/min --limit-burst 7 -j LOG --log-prefix "XMAS Packets"
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN FIN,SYN -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,ACK FIN -m limit --limit 5/min --limit-burst 7 -j LOG --log-prefix "Fin Packets Scan"
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,ACK FIN -j DROP
+iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,ACK,URG -j DROP
+iptables -A INPUT -m state --state INVALID -j DROP
+iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+
+# Apply DROP Policy
 iptables -P INPUT DROP
 iptables -P OUTPUT DROP
 iptables -P FORWARD DROP
