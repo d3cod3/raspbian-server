@@ -1,9 +1,10 @@
 
+# Raspbian Secure Server Config Tutorial (R.S.S.C.T)
+
 
 Table of Contents
 =================
 
-   * [Raspbian Secure Server Config Tutorial (R.S.S.C.T)](#raspbian-secure-server-config-tutorial-rssct)
    * [Description](#description)
    * [Install](#install)
    * [Post-Install Config](#post-install-config)
@@ -29,9 +30,8 @@ Table of Contents
       * [HARDENING (BONUS)](#hardening-bonus)
       * [HOME ROUTER SETTINGS](#home-router-settings)
       * [Your 80€ dedicated server (80DS)](#your-80-dedicated-server-80ds)
-      
 
-# Raspbian Secure Server Config Tutorial (R.S.S.C.T)
+
 
 # Description
 
