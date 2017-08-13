@@ -28,8 +28,8 @@ Table of Contents
          * [Tripwire Intrusion Detection System](#tripwire-intrusion-detection-system)
          * [TLS/SSL](#tlsssl)
       * [HARDENING (BONUS)](#hardening-bonus)
-      * [HOME ROUTER SETTINGS](#home-router-settings)
-      * [Your 80€ dedicated server (80DS)](#your-80-dedicated-server-80ds)
+    * [HOME ROUTER SETTINGS](#home-router-settings)
+    * [Your 80€ dedicated server (80DS)](#your-80-dedicated-server-80ds)
 
 
 
