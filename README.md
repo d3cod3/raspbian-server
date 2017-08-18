@@ -2116,7 +2116,7 @@ So, every day we will receive a report from our **tripwire** system, and another
 
 But that is a lot of logs and reports, so we will install a very powerful log parser to help us organize and recover information about our system, so next story, a short one, Logwatch Log Analyzer!
 
-### Logwatch Log Analyzer
+### Logwatch Log Analyzer
 
 Usually, system log files are really, really long files with eventually a lot of information repeated, so in order to help us maintaining our beautiful raspbian server, we'll install here a very useful application that take all the system logs and create a nice and clean digest about our system activities (the good ones and the not so good ones), so let's install logwatch:
 
