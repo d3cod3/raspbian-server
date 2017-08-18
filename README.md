@@ -861,7 +861,7 @@ apt-get install apache2
 
 Now, from a client browser, let's check if it's working, copy in the url the ip of your Raspberry server and hit enter
 
-![Apache web server](http://rss.d3cod3.org/apache_screenshot.jpg)
+![Apache web server](http://synlogic.d3cod3.org/RSS/apache_screenshot.jpg)
 
 That's it, Apache installed, and up&running! Now the configuration:
 
@@ -1095,7 +1095,7 @@ Then add the following typical php code:
 
 Now open from your client browser the following url: http://your_raspbian_server_ip/info.php, if everything went fine you will see the common php information page.
 
-![PHP Install](http://rss.d3cod3.org/php_install.jpg)
+![PHP Install](http://synlogic.d3cod3.org/RSS/php_install.jpg)
 
 We are done with PHP installation, now we remove the info file for security reasons:
 
@@ -1508,7 +1508,7 @@ service apache2 restart
 AND THAT'S IT, PEOPLE! Open in your browser the ip of your raspbian server and check it out:
 
 
-![Raspbian RoR](http://rss.d3cod3.org/raspbian_rails.jpg)
+![Raspbian RoR](http://synlogic.d3cod3.org/RSS/raspbian_rails.jpg)
 
 
 So here we are, our server is starting to get all the pieces in place. Next story? Hide our SSH service!
