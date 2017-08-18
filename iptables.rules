@@ -47,6 +47,14 @@ iptables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,
 iptables -A INPUT -m state --state INVALID -j DROP
 iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
+# Transparent Proxy Leak Prevention
+iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP
+iptables -A OUTPUT -m state --state INVALID -j DROP
+iptables -A OUTPUT ! -s 127.0.0.1/32 ! -d 127.0.0.1/32 ! -o lo -p tcp -m tcp --tcp-flags FIN,ACK FIN,ACK -j LOG --log-prefix "Transproxy leak blocked: " --log-uid
+iptables -A OUTPUT ! -s 127.0.0.1/32 ! -d 127.0.0.1/32 ! -o lo -p tcp -m tcp --tcp-flags RST,ACK RST,ACK -j LOG --log-prefix "Transproxy leak blocked: " --log-uid
+iptables -A OUTPUT ! -s 127.0.0.1/32 ! -d 127.0.0.1/32 ! -o lo -p tcp -m tcp --tcp-flags FIN,ACK FIN,ACK -j DROP
+iptables -A OUTPUT ! -s 127.0.0.1/32 ! -d 127.0.0.1/32 ! -o lo -p tcp -m tcp --tcp-flags RST,ACK RST,ACK -j DROP
+
 # Apply DROP Policy
 iptables -P INPUT DROP
 iptables -P OUTPUT DROP
