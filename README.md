@@ -40,6 +40,8 @@ Let's build a server at home with a RaspberryPI, a minimal optimized [Raspbian](
 
 This tutorial is for Raspberry Pi Model 1B, 1B+ and 2B, a minimal microSD card of 8GB (i'm using a 95mb/s 64GB) and the standard RPi 1GB of RAM memory
 
+_For RPi Model 3 or RPi zero, check the [alpha branch v1.1.x of raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst/tree/v1.1.x), but beware, some stuff from this tutorial will be probably different, and you'll be able to solve things only with a lot of passion and enthusiasm._
+
 Here follow the detailed process of building the server, let's make coffee and get to it!
 
 
