@@ -595,6 +595,12 @@ AllowTcpForwarding no
 ForceCommand internal-sftp
 ```
 
+And the last really important one, add the new user **sftpuser** to the AllowUsers line:
+
+```bash
+AllowUsers user sftpuser
+```
+
 And this is the part where we confine the sftpgroup users group to the /var/www directory (they will not be able to escape from there, or at least they will have to sweat it).
 We use /var/www because is the standard directory for web servers, but feel free to choose another folder if you prefer, like /var/sftp for example.
 This step is really important, if you forget to configure the ChrootDirectory for the specific users group, a connected user could gain access to the / (the server root) and we do not actually want that!!!
@@ -908,7 +914,7 @@ Save and restart again.
 ```bash
 a2dismod autoindex
 a2dismod status
-/etc/init.d/apach2 restart
+/etc/init.d/apache2 restart
 ```
 
 * 4 - Install additional modules
