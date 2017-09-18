@@ -5,11 +5,11 @@ Tabla de contenidos
 
    * [Descripción](#descripción)
    * [Instalación](#instalación)
-   * [Configuración Post-Instalación](#Configuración Post-Instalación)
+   * [Configuración Post-Instalación](#configuración-post-instalación)
    * [Configuración](#configuración)
       * [Usuarios](#usuarios)
          * [SSH](#ssh)
-         * [Fail2ban (Sección Especial)](#fail2ban-special-section)
+         * [Fail2ban (Sección Especial)](#fail2ban-sección-especial)
       * [Net](#net)
       * [DNS](#dns)
       * [Servicios](#servicios)
