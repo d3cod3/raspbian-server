@@ -1809,6 +1809,12 @@ Next, we whitelist a specific rpi arm preloaded shared library that is giving us
 SHARED_LIB_WHITELIST=/usr/lib/arm-linux-gnueabihf/libarmmem.so
 ```
 
+Next, we disable the warning about Protocol 1 which is no longer supported on OpenSSH: we do this by using the option 2 for the allow_ssh_prot (as per instructions _If the 'Protocol' option has not been set in the SSH configuration file, then a value of '2' may be set here in order to  suppress a warning message_)
+
+```
+ALLOW_SSH_PROT_V1=2
+```
+
 And finally, the last one (in my case), we have knockd installed and listening to the network interface (our port knocker), so we need to whitelist it:
 
 ```bash
