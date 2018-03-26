@@ -1833,19 +1833,19 @@ RKHunter will tell us here that the rkhunter.conf file properties has changed, f
 rkhunter --propupd
 ```
 
-That's it, we are ready for the last step, automate the checks with a [CRON job](https://en.wikipedia.org/wiki/Cron):
-
+That's it, we are ready for the last step, enable automated checks with a [CRON job](https://en.wikipedia.org/wiki/Cron).
+Edit file /etc/default/rkhunter
 ```bash
-crontab -e
+CRON_DAILY_RUN="true"
+CRON_DB_UPDATE="true"
+REPORT_EMAIL="root"
 ```
 
-This will open our crontab file for edit, here we will add a line that will tell the system to run an rkhunter check every day at the specified time:
-
-```bash
-25 05 * * * /usr/bin/rkhunter --cronjob --update --quiet
+This will activate the rkhunter job defined in /etc/cron.daily which sources its configuration from /etc/default/rkhunter
 ```
-
-In this line we are telling cron to launch rkhunter check at 05:25am every day, and as configured, if it finds some warnings, we'll receive an email at the specified mail with the details.
+# source our config
+. /etc/default/rkhunter
+```
 
 We have it! RKHunter ready and running checks every day, amazing! But remember, you'll need to check regularly for messages about warnings, at least once a week, in order to keep everything in order, every new change in the system could be recognized as a warning by rkhunter, so we'll need to always take a look a keep it clean from false positives, if we want to be able in the future to recognize real bad files.
 
