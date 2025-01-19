@@ -1,8 +1,6 @@
 
 # Raspbian Secure Server Config Tutorial (R.S.S.C.T)
 
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V21B90C)
-
 
 Table of Contents
 =================
